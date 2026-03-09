@@ -4,7 +4,7 @@ namespace TwitchKickDownloader.Models.Dtos;
 
 public class KickVideoInfo
 {
-    [JsonPropertyName("id")]
+    [JsonPropertyName("video_id")]
     public string Id { get; set; } = "";
 
     [JsonPropertyName("title")]
@@ -16,20 +16,15 @@ public class KickVideoInfo
     [JsonPropertyName("created_at")]
     public DateTime CreatedAt { get; set; }
 
-    [JsonPropertyName("source")]
+    // Official API uses "url" for the video source
+    [JsonPropertyName("url")]
     public string? Source { get; set; }
 
     [JsonPropertyName("thumbnail")]
-    public KickVideoThumbnail? Thumbnail { get; set; }
+    public string? ThumbnailUrl { get; set; }
 
     [JsonPropertyName("views")]
     public int Views { get; set; }
-}
-
-public class KickVideoThumbnail
-{
-    [JsonPropertyName("src")]
-    public string? Src { get; set; }
 }
 
 public class KickVideosResponse

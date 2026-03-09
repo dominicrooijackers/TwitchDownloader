@@ -40,6 +40,8 @@ builder.Services.AddSingleton<TwitchAuthService>();  // kept for optional creden
 builder.Services.AddScoped<TwitchApiService>();
 
 // Kick services
+builder.Services.AddHttpClient<KickAuthService>();
+builder.Services.AddSingleton<KickAuthService>();
 builder.Services.AddHttpClient<KickApiService>();
 builder.Services.AddScoped<KickApiService>();
 

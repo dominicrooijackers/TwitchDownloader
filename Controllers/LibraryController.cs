@@ -27,12 +27,14 @@ public class LibraryController(
                     var dir = Path.Combine(streamerDir, typeDir);
                     if (!Directory.Exists(dir)) continue;
 
-                    foreach (var file in Directory.GetFiles(dir, "*.mp4").OrderByDescending(f => IOFile.GetCreationTimeUtc(f)))
+                    foreach (var fullFilePath in Directory.GetFiles(dir, "*.mp4").OrderByDescending(f => IOFile.GetCreationTimeUtc(f)))
                     {
-                        var info = new FileInfo(file);
-                        var relPath = Path.GetRelativePath(storagePath, file);
-                        var chatPath = file.Replace(".mp4", "_chat.json");
+                        var info = new FileInfo(fullFilePath);
+                        var relPath = Path.GetRelativePath(storagePath, fullFilePath);
+                        var chatPath = fullFilePath.Replace(".mp4", "_chat.json");
                         var chatRelPath = Path.GetRelativePath(storagePath, chatPath);
+                        var thumbPath = fullFilePath.Replace(".mp4", ".jpg");
+                        var thumbRelPath = Path.GetRelativePath(storagePath, thumbPath);
 
                         items.Add(new LibraryItem
                         {
@@ -44,7 +46,10 @@ public class LibraryController(
                             SizeBytes = info.Length,
                             RecordedAt = info.CreationTimeUtc,
                             HasChat = IOFile.Exists(chatPath),
-                            ChatId = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(chatRelPath))
+                            ChatId = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(chatRelPath)),
+                            ThumbnailId = IOFile.Exists(thumbPath)
+                                ? Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(thumbRelPath))
+                                : null
                         });
                     }
                 }
@@ -71,6 +76,17 @@ public class LibraryController(
             return NotFound();
 
         return PhysicalFile(path, "video/mp4", enableRangeProcessing: true);
+    }
+
+    // Serve a thumbnail image
+    [HttpGet]
+    public IActionResult Thumbnail(string id)
+    {
+        var path = ResolvePath(id);
+        if (path is null || !IOFile.Exists(path) || !path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
+            return NotFound();
+
+        return PhysicalFile(path, "image/jpeg");
     }
 
     // Serve the chat JSON

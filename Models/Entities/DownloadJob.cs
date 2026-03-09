@@ -15,6 +15,8 @@ public class DownloadJob
     public string Quality { get; set; } = "best";
     public string? OutputFilePath { get; set; }
     public string? ChatOutputPath { get; set; }
+    public string? ThumbnailUrl { get; set; }
+    public string? ThumbnailFilePath { get; set; }
     public long BytesDownloaded { get; set; }
     public float? ProgressPct { get; set; }
     public string? ErrorMessage { get; set; }

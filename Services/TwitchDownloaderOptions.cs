@@ -5,6 +5,8 @@ public class TwitchKickDownloaderOptions
     public const string Section = "TwitchKickDownloader";
     public string ClientId { get; set; } = "";
     public string ClientSecret { get; set; } = "";
+    public string KickClientId { get; set; } = "";
+    public string KickClientSecret { get; set; } = "";
     public string StoragePath { get; set; } = "C:\\TwitchRecordings";
     public int LivePollIntervalSeconds { get; set; } = 60;
     public int VodPollIntervalSeconds { get; set; } = 300;

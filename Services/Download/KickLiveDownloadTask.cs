@@ -31,15 +31,14 @@ public class KickLiveDownloadTask(
         InMemoryLogStore.SetJobContext(jobId);
         logger.LogInformation("Starting Kick live download for {Slug}, job {JobId}", slug, jobId);
 
-        // 1. Fetch channel info to get M3U8 and chatroom ID
-        var channel = await api.GetChannelInfoAsync(slug, ct)
-            ?? throw new InvalidOperationException($"Could not fetch Kick channel info for {slug}");
+        // 1. Fetch stream info to get M3U8 and chatroom ID
+        var stream = await api.GetStreamAsync(slug, ct)
+            ?? throw new InvalidOperationException($"Could not fetch Kick stream info for {slug} — channel may be offline or Kick credentials not configured");
 
-        var playbackUrl = channel.Livestream?.PlaybackUrl
-            ?? throw new InvalidOperationException("No playback URL in Kick channel info");
+        var playbackUrl = stream.PlaybackUrl
+            ?? throw new InvalidOperationException("No playback URL in Kick stream info");
 
-        var chatroomId = channel.Chatroom?.Id
-            ?? throw new InvalidOperationException("No chatroom ID in Kick channel info");
+        var chatroomId = stream.ChatroomId;
 
         // 2. Resolve variant URL from master M3U8 (or use directly if already a variant)
         using var http = new HttpClient();

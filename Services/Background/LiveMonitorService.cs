@@ -82,15 +82,16 @@ public class LiveMonitorService(
 
     private async Task PollKickLiveAsync(Models.Entities.Streamer streamer, AppDbContext db, KickApiService api, CancellationToken ct)
     {
-        var channel = await api.GetChannelInfoAsync(streamer.StreamerName, ct);
-        if (channel?.Livestream is null) return;
+        var stream = await api.GetStreamAsync(streamer.StreamerName, ct);
+        if (stream is null) return;
 
-        var streamId = channel.Livestream.Id;
-        var title = channel.Livestream.SessionTitle;
+        var streamId = stream.Id;
+        var title = stream.StreamTitle;
 
         var alreadyTracked = await db.DownloadJobs
             .AnyAsync(j =>
                 j.StreamerLogin == streamer.StreamerName &&
+                j.Platform == Platform.Kick &&
                 j.TwitchItemId == streamId &&
                 (j.Status == JobStatus.Queued || j.Status == JobStatus.Downloading || j.Status == JobStatus.Muxing),
                 ct);

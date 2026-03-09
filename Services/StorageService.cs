@@ -31,6 +31,15 @@ public partial class StorageService(IOptions<TwitchKickDownloaderOptions> opts, 
         return Path.Combine(dir, $"{vodId}_{SanitizeTitle(title)}.mp4");
     }
 
+    public string GetVodThumbnailPath(string login, Platform platform, string vodId, string title, string? customPath = null)
+    {
+        var dir = customPath is not null
+            ? Path.Combine(customPath, platform.ToString(), login, "VODs")
+            : GetVodDir(login, platform);
+        Directory.CreateDirectory(dir);
+        return Path.Combine(dir, $"{vodId}_{SanitizeTitle(title)}.jpg");
+    }
+
     public string GetVodChatOutputPath(string login, Platform platform, string vodId, string title, string? customPath = null)
     {
         var dir = customPath is not null

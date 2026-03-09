@@ -77,7 +77,7 @@ public class VodMonitorService(
             await db.SaveChangesAsync(ct);
 
             logger.LogInformation("New Twitch VOD {VodId} for {Login}, queuing auto-download", video.Id, streamer.StreamerName);
-            await orchestrator.EnqueueAsync(streamer.StreamerName, Platform.Twitch, JobType.VodAuto, video.Id, video.Title, streamer.PreferredQuality, ct);
+            await orchestrator.EnqueueAsync(streamer.StreamerName, Platform.Twitch, JobType.VodAuto, video.Id, video.Title, streamer.PreferredQuality, ct, thumbnailUrl: video.ThumbnailUrl);
         }
     }
 
@@ -96,7 +96,7 @@ public class VodMonitorService(
             await db.SaveChangesAsync(ct);
 
             logger.LogInformation("New Kick VOD {VodId} for {Login}, queuing auto-download", video.Id, streamer.StreamerName);
-            await orchestrator.EnqueueAsync(streamer.StreamerName, Platform.Kick, JobType.VodAuto, video.Id, video.Title, streamer.PreferredQuality, ct);
+            await orchestrator.EnqueueAsync(streamer.StreamerName, Platform.Kick, JobType.VodAuto, video.Id, video.Title, streamer.PreferredQuality, ct, thumbnailUrl: video.ThumbnailUrl);
         }
     }
 }

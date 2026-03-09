@@ -11,6 +11,7 @@ public class LibraryItem
     public DateTime RecordedAt { get; set; }
     public bool HasChat { get; set; }
     public string ChatId { get; set; } = "";      // base64-encoded relative path of chat json
+    public string? ThumbnailId { get; set; }      // base64-encoded relative path of thumbnail jpg, or null
 }
 
 public class LibraryViewModel
