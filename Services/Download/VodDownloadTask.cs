@@ -52,7 +52,7 @@ public class VodDownloadTask(
 
         // 3. Fetch variant M3U8 to enumerate all segments
         var variantM3u8 = await http.GetStringAsync(variantUrl, ct);
-        var segments = ParseSegments(variantM3u8);
+        var segments = ParseSegments(variantM3u8, variantUrl);
         if (segments.Count == 0)
             throw new InvalidOperationException("No segments found in VOD M3U8");
 
@@ -215,10 +215,12 @@ public class VodDownloadTask(
         return match.Url ?? variants[0].Url;
     }
 
-    private static List<string> ParseSegments(string m3u8)
+    private static List<string> ParseSegments(string m3u8, string variantUrl)
     {
+        var baseUrl = variantUrl[..(variantUrl.LastIndexOf('/') + 1)];
         return m3u8.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(l => !l.StartsWith('#') && (l.StartsWith("http") || l.EndsWith(".ts")))
+            .Select(l => l.StartsWith("http") ? l : baseUrl + l)
             .ToList();
     }
 }

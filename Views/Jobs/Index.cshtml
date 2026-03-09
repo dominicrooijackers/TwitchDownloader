@@ -49,18 +49,25 @@
                                job.Status == TwitchDownloader.Models.Entities.JobStatus.Downloading ||
                                job.Status == TwitchDownloader.Models.Entities.JobStatus.Muxing;
             }
-            @if (isActive && job.ProgressPct.HasValue)
+            @if (job.Status == TwitchDownloader.Models.Entities.JobStatus.Muxing)
+            {
+                <div class="progress mt-1" style="height:6px">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                         role="progressbar" style="width:100%" title="Muxing — FFmpeg is converting to MP4"></div>
+                </div>
+            }
+            else if (isActive && job.ProgressPct.HasValue)
             {
                 <div class="progress mt-1" style="height:6px">
                     <div class="progress-bar progress-bar-striped progress-bar-animated"
-                         role="progressbar" style="width:@(job.ProgressPct.Value.ToString("F0"))%"></div>
+                         role="progressbar" style="width:@(job.ProgressPct.Value.ToString("F0"))%" title="Downloading — @(job.ProgressPct.Value.ToString("F0"))%"></div>
                 </div>
             }
             else if (isActive && job.Status == TwitchDownloader.Models.Entities.JobStatus.Downloading)
             {
                 <div class="progress mt-1" style="height:6px">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
-                         role="progressbar" style="width:100%"></div>
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                         role="progressbar" style="width:100%" title="Downloading segments..."></div>
                 </div>
             }
             @if (job.ErrorMessage is not null)
