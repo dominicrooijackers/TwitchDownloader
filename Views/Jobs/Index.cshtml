@@ -16,14 +16,23 @@
                 <div>
                     <strong>@job.StreamerLogin</strong>
                     <span class="badge @GetBadgeClass(job.Status) ms-1">@job.Status</span>
-                    <span class="badge bg-secondary ms-1">@job.JobType</span>
+                    <span class="badge bg-secondary ms-1">@(job.JobType switch {
+                        TwitchDownloader.Models.Entities.JobType.LiveStream => "Live",
+                        TwitchDownloader.Models.Entities.JobType.VodOnDemand => "VOD (Manual)",
+                        TwitchDownloader.Models.Entities.JobType.VodAuto => "VOD (Auto)",
+                        _ => job.JobType.ToString()
+                    })</span>
                     <small class="text-muted ms-2">@job.Title</small>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                    <small class="text-muted">@job.StartedAt.ToString("MM/dd HH:mm")</small>
+                <div class="d-flex align-items-center gap-3">
+                    <small class="text-muted" title="@job.StartedAt.ToString("yyyy-MM-dd HH:mm:ss") UTC">
+                        <i class="bi bi-clock"></i> Started @job.StartedAt.ToString("MMM d, HH:mm")
+                    </small>
                     @if (job.BytesDownloaded > 0)
                     {
-                        <small class="text-muted bytes-display">@FormatBytes(job.BytesDownloaded)</small>
+                        <small class="text-muted bytes-display">
+                            <i class="bi bi-download"></i> <span class="bytes-value">@FormatBytes(job.BytesDownloaded)</span>
+                        </small>
                     }
                     @if (job.Status == TwitchDownloader.Models.Entities.JobStatus.Queued ||
                          job.Status == TwitchDownloader.Models.Entities.JobStatus.Downloading ||
@@ -35,14 +44,19 @@
                     }
                 </div>
             </div>
-            @if (job.ProgressPct.HasValue)
+            @{
+                var isActive = job.Status == TwitchDownloader.Models.Entities.JobStatus.Queued ||
+                               job.Status == TwitchDownloader.Models.Entities.JobStatus.Downloading ||
+                               job.Status == TwitchDownloader.Models.Entities.JobStatus.Muxing;
+            }
+            @if (isActive && job.ProgressPct.HasValue)
             {
                 <div class="progress mt-1" style="height:6px">
                     <div class="progress-bar progress-bar-striped progress-bar-animated"
                          role="progressbar" style="width:@(job.ProgressPct.Value.ToString("F0"))%"></div>
                 </div>
             }
-            else if (job.Status == TwitchDownloader.Models.Entities.JobStatus.Downloading)
+            else if (isActive && job.Status == TwitchDownloader.Models.Entities.JobStatus.Downloading)
             {
                 <div class="progress mt-1" style="height:6px">
                     <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
