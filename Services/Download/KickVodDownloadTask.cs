@@ -37,6 +37,7 @@ public class KickVodDownloadTask(
         // 2. Prepare paths
         var tempPath = storage.GetTempFilePath();
         var outputPath = storage.GetVodOutputPath(slug, Platform.Kick, vodId, job.Title);
+        var thumbnailPath = storage.GetVodThumbnailPath(slug, Platform.Kick, vodId, job.Title);
 
         using var http = new HttpClient();
         http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
@@ -45,16 +46,16 @@ public class KickVodDownloadTask(
         // 3. Determine if source is M3U8 or direct file
         if (sourceUrl.Contains(".m3u8") || sourceUrl.Contains("m3u8"))
         {
-            await DownloadHlsAsync(job, jobId, sourceUrl, tempPath, outputPath, http, ct);
+            await DownloadHlsAsync(job, jobId, sourceUrl, tempPath, outputPath, thumbnailPath, http, ct);
         }
         else
         {
-            await DownloadDirectAsync(job, jobId, sourceUrl, outputPath, http, ct);
+            await DownloadDirectAsync(job, jobId, sourceUrl, outputPath, thumbnailPath, http, ct);
             return; // Direct download handles job completion itself
         }
     }
 
-    private async Task DownloadHlsAsync(DownloadJob job, int jobId, string sourceUrl, string tempPath, string outputPath, HttpClient http, CancellationToken ct)
+    private async Task DownloadHlsAsync(DownloadJob job, int jobId, string sourceUrl, string tempPath, string outputPath, string thumbnailPath, HttpClient http, CancellationToken ct)
     {
         // Try as master M3U8 first
         var m3u8Content = await http.GetStringAsync(sourceUrl, ct);
@@ -139,6 +140,21 @@ public class KickVodDownloadTask(
             try { File.Delete(tempPath); } catch { }
         }
 
+        // Download thumbnail
+        if (!string.IsNullOrEmpty(job.ThumbnailUrl))
+        {
+            try
+            {
+                var thumbBytes = await http.GetByteArrayAsync(job.ThumbnailUrl, CancellationToken.None);
+                await File.WriteAllBytesAsync(thumbnailPath, thumbBytes, CancellationToken.None);
+                job.ThumbnailFilePath = thumbnailPath;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to download thumbnail for Kick VOD {VodId}", job.TwitchItemId);
+            }
+        }
+
         job.Status = JobStatus.Completed;
         job.OutputFilePath = outputPath;
         job.BytesDownloaded = totalBytes;
@@ -148,7 +164,7 @@ public class KickVodDownloadTask(
         logger.LogInformation("Completed Kick VOD download for {VodId}, job {JobId}", job.TwitchItemId, jobId);
     }
 
-    private async Task DownloadDirectAsync(DownloadJob job, int jobId, string sourceUrl, string outputPath, HttpClient http, CancellationToken ct)
+    private async Task DownloadDirectAsync(DownloadJob job, int jobId, string sourceUrl, string outputPath, string thumbnailPath, HttpClient http, CancellationToken ct)
     {
         try
         {
@@ -178,6 +194,20 @@ public class KickVodDownloadTask(
                     await db.SaveChangesAsync(ct);
                     await orchestrator.BroadcastProgressAsync(jobId, totalBytes, pct, JobStatus.Downloading);
                     progressTimer = DateTime.UtcNow;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(job.ThumbnailUrl))
+            {
+                try
+                {
+                    var thumbBytes = await http.GetByteArrayAsync(job.ThumbnailUrl, CancellationToken.None);
+                    await File.WriteAllBytesAsync(thumbnailPath, thumbBytes, CancellationToken.None);
+                    job.ThumbnailFilePath = thumbnailPath;
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to download thumbnail for Kick VOD {VodId}", job.TwitchItemId);
                 }
             }
 

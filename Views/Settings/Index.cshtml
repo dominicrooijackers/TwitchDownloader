@@ -5,13 +5,13 @@
 
 <h2><i class="bi bi-gear-fill"></i> Settings</h2>
 
-@if (string.IsNullOrWhiteSpace(Model.ClientId) || string.IsNullOrWhiteSpace(Model.ClientSecret))
+@if (string.IsNullOrWhiteSpace(Model.KickClientId) || string.IsNullOrWhiteSpace(Model.KickClientSecret))
 {
-    <div class="alert alert-info">
-        <i class="bi bi-info-circle-fill"></i>
-        <strong>Credentials optional.</strong>
-        The app works without a Twitch Client ID &amp; Secret — public streams and VODs download fine via the GQL API.
-        Credentials are only needed if you want to access subscriber-only or restricted content.
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <strong>Kick credentials required.</strong>
+        Kick Client ID &amp; Secret are needed to use the official Kick API for monitoring and downloads.
+        Get them from <a href="https://dev.kick.com" target="_blank" class="alert-link">dev.kick.com</a>.
     </div>
 }
 
@@ -21,7 +21,7 @@
             @Html.AntiForgeryToken()
 
             <div class="card mb-3">
-                <div class="card-header">Twitch API Credentials</div>
+                <div class="card-header">Twitch API Credentials <small class="text-muted">(optional)</small></div>
                 <div class="card-body">
                     <div class="mb-3">
                         <label asp-for="ClientId" class="form-label"></label>
@@ -31,6 +31,21 @@
                     <div class="mb-3">
                         <label asp-for="ClientSecret" class="form-label"></label>
                         <input asp-for="ClientSecret" class="form-control font-monospace" type="password" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">Kick API Credentials <small class="text-muted">(required for Kick)</small></div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="KickClientId" class="form-label"></label>
+                        <input asp-for="KickClientId" class="form-control font-monospace" />
+                        <div class="form-text">Get these from <a href="https://dev.kick.com" target="_blank">dev.kick.com</a></div>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="KickClientSecret" class="form-label"></label>
+                        <input asp-for="KickClientSecret" class="form-control font-monospace" type="password" />
                     </div>
                 </div>
             </div>

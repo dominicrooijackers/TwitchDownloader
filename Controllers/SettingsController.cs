@@ -17,6 +17,8 @@ public class SettingsController(
         {
             ClientId = o.ClientId,
             ClientSecret = o.ClientSecret,
+            KickClientId = o.KickClientId,
+            KickClientSecret = o.KickClientSecret,
             StoragePath = o.StoragePath,
             LivePollIntervalSeconds = o.LivePollIntervalSeconds,
             VodPollIntervalSeconds = o.VodPollIntervalSeconds,
@@ -51,6 +53,8 @@ public class SettingsController(
         {
             ["ClientId"] = model.ClientId,
             ["ClientSecret"] = model.ClientSecret,
+            ["KickClientId"] = model.KickClientId,
+            ["KickClientSecret"] = model.KickClientSecret,
             ["StoragePath"] = model.StoragePath,
             ["LivePollIntervalSeconds"] = model.LivePollIntervalSeconds,
             ["VodPollIntervalSeconds"] = model.VodPollIntervalSeconds,

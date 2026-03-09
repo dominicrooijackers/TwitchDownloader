@@ -62,6 +62,7 @@ public class VodDownloadTask(
         var tempPath = storage.GetTempFilePath();
         var outputPath = storage.GetVodOutputPath(login, Platform.Twitch, vodId, job.Title);
         var chatPath = storage.GetVodChatOutputPath(login, Platform.Twitch, vodId, job.Title);
+        var thumbnailPath = storage.GetVodThumbnailPath(login, Platform.Twitch, vodId, job.Title);
 
         // 5. Download all segments with progress
         long totalBytes = 0;
@@ -113,7 +114,24 @@ public class VodDownloadTask(
             return;
         }
 
-        // 6. Download chat (Twitch comments API)
+        // 6. Download thumbnail
+        if (!string.IsNullOrEmpty(job.ThumbnailUrl))
+        {
+            try
+            {
+                var thumbUrl = job.ThumbnailUrl
+                    .Replace("%{width}", "640").Replace("%{height}", "360");
+                var thumbBytes = await http.GetByteArrayAsync(thumbUrl, ct);
+                await File.WriteAllBytesAsync(thumbnailPath, thumbBytes, CancellationToken.None);
+                job.ThumbnailFilePath = thumbnailPath;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Failed to download thumbnail for VOD {VodId}", vodId);
+            }
+        }
+
+        // 7. Download chat (Twitch comments API)
         try
         {
             await DownloadChatAsync(vodId, chatPath, http, ct);
@@ -124,7 +142,7 @@ public class VodDownloadTask(
             logger.LogWarning(ex, "Failed to download chat for VOD {VodId}", vodId);
         }
 
-        // 7. Mux with FFmpeg
+        // 8. Mux with FFmpeg
         job.Status = JobStatus.Muxing;
         await db.SaveChangesAsync(CancellationToken.None);
         await orchestrator.BroadcastStatusAsync(jobId, JobStatus.Muxing);

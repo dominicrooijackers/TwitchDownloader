@@ -10,6 +10,12 @@ public class SettingsViewModel
     [Display(Name = "Twitch Client Secret")]
     public string ClientSecret { get; set; } = "";
 
+    [Display(Name = "Kick Client ID")]
+    public string KickClientId { get; set; } = "";
+
+    [Display(Name = "Kick Client Secret")]
+    public string KickClientSecret { get; set; } = "";
+
     [Display(Name = "Storage Path")]
     public string StoragePath { get; set; } = "C:\\TwitchRecordings";
 

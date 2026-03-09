@@ -46,7 +46,7 @@ public class StreamersController(
         if (model.Platform == Platform.Kick)
         {
             var channel = await kickApi.GetChannelInfoAsync(model.StreamerName);
-            displayName = channel?.User?.Username ?? model.StreamerName;
+            displayName = channel?.BroadcasterUsername ?? model.StreamerName;
         }
         else
         {
@@ -129,7 +129,7 @@ public class StreamersController(
                 v.Title,
                 Duration = TimeSpan.FromSeconds(v.Duration).ToString(@"h\:mm\:ss"),
                 v.CreatedAt,
-                ThumbnailUrl = v.Thumbnail?.Src ?? "",
+                ThumbnailUrl = v.ThumbnailUrl ?? "",
                 ViewCount = v.Views
             }));
         }
@@ -150,13 +150,13 @@ public class StreamersController(
         return Json(new { exists = System.IO.File.Exists(path) });
     }
 
-    public async Task<IActionResult> DownloadVod([FromForm] string login, [FromForm] string vodId, [FromForm] string title, [FromForm] string quality, [FromForm] string platform = "Twitch")
+    public async Task<IActionResult> DownloadVod([FromForm] string login, [FromForm] string vodId, [FromForm] string title, [FromForm] string quality, [FromForm] string platform = "Twitch", [FromForm] string? thumbnailUrl = null)
     {
         var p = Enum.TryParse<Platform>(platform, out var parsed) ? parsed : Platform.Twitch;
         var streamer = await db.Streamers.FirstOrDefaultAsync(s => s.StreamerName == login && s.Platform == p);
         var effectiveQuality = string.IsNullOrEmpty(quality) ? (streamer?.PreferredQuality ?? "best") : quality;
 
-        await orchestrator.EnqueueAsync(login, p, JobType.VodOnDemand, vodId, title, effectiveQuality);
+        await orchestrator.EnqueueAsync(login, p, JobType.VodOnDemand, vodId, title, effectiveQuality, thumbnailUrl: thumbnailUrl);
         return RedirectToAction("Index", "Jobs");
     }
 }

@@ -20,7 +20,7 @@ public class DownloadOrchestrator(
 
     public async Task<int> EnqueueAsync(
         string streamerLogin, Platform platform, JobType jobType, string twitchItemId,
-        string title, string quality, CancellationToken ct = default)
+        string title, string quality, CancellationToken ct = default, string? thumbnailUrl = null)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -34,6 +34,7 @@ public class DownloadOrchestrator(
             TwitchItemId = twitchItemId,
             Title = title,
             Quality = quality,
+            ThumbnailUrl = thumbnailUrl,
             StartedAt = DateTime.UtcNow
         };
         db.DownloadJobs.Add(job);
