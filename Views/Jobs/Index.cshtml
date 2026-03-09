@@ -34,6 +34,9 @@
                             <i class="bi bi-download"></i> <span class="bytes-value">@FormatBytes(job.BytesDownloaded)</span>
                         </small>
                     }
+                    <button class="btn btn-sm btn-outline-secondary" onclick="toggleLogs(@job.Id, this)">
+                        <i class="bi bi-terminal"></i> Logs
+                    </button>
                     @if (job.Status == TwitchDownloader.Models.Entities.JobStatus.Queued ||
                          job.Status == TwitchDownloader.Models.Entities.JobStatus.Downloading ||
                          job.Status == TwitchDownloader.Models.Entities.JobStatus.Muxing)
@@ -74,6 +77,7 @@
             {
                 <small class="text-danger">@job.ErrorMessage</small>
             }
+            <div id="job-logs-@job.Id" class="job-logs mt-2" style="display:none"></div>
         </div>
     </div>
 }
@@ -106,4 +110,50 @@
         if (bytes < 1024 * 1024 * 1024) return $"{bytes / 1024.0 / 1024.0:F1} MB";
         return $"{bytes / 1024.0 / 1024.0 / 1024.0:F2} GB";
     }
+}
+
+@section Scripts {
+<script>
+const levelColors = { Information: 'text-primary', Warning: 'text-warning', Error: 'text-danger', Critical: 'text-danger' };
+const levelBadges = { Information: 'text-bg-primary', Warning: 'text-bg-warning', Error: 'text-bg-danger', Critical: 'text-bg-danger' };
+
+function toggleLogs(jobId, btn) {
+    const panel = document.getElementById('job-logs-' + jobId);
+    if (panel.style.display !== 'none') {
+        panel.style.display = 'none';
+        btn.classList.remove('active');
+        return;
+    }
+    btn.classList.add('active');
+    panel.style.display = '';
+    panel.innerHTML = '<div class="text-muted small"><span class="spinner-border spinner-border-sm"></span> Loading logs...</div>';
+    fetch('/Logs/ForJob/' + jobId)
+        .then(r => r.json())
+        .then(logs => renderJobLogs(panel, logs));
+}
+
+function renderJobLogs(panel, logs) {
+    if (!logs.length) {
+        panel.innerHTML = '<div class="text-muted small fst-italic">No logs captured for this job.</div>';
+        return;
+    }
+    const rows = logs.map(e => {
+        const badge = levelBadges[e.level] ?? 'text-bg-secondary';
+        const ts = new Date(e.timestamp).toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const shortCat = e.category.split('.').pop();
+        const exc = e.exception ? `<div class="text-danger" style="white-space:pre-wrap;font-size:0.7rem">${escapeHtml(e.exception)}</div>` : '';
+        return `<div class="d-flex gap-2 py-1 border-bottom" style="font-size:0.78rem">
+            <span class="text-muted text-nowrap">${ts}</span>
+            <span class="badge ${badge}" style="min-width:70px">${e.level}</span>
+            <span class="text-muted text-nowrap">${escapeHtml(shortCat)}</span>
+            <span class="font-monospace flex-fill" style="word-break:break-all">${escapeHtml(e.message)}${exc}</span>
+        </div>`;
+    }).join('');
+    panel.innerHTML = `<div class="border rounded p-2 bg-body-secondary" style="max-height:300px;overflow-y:auto">${rows}</div>`;
+}
+
+function escapeHtml(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
 }

@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using TwitchDownloader.Data;
 using TwitchDownloader.Models.Entities;
+using TwitchDownloader.Services.Logging;
 using TwitchDownloader.Services.Twitch;
 using Xabe.FFmpeg;
 
@@ -27,6 +28,7 @@ public class LiveDownloadTask(
             ?? throw new InvalidOperationException($"Job {jobId} not found");
 
         var login = job.StreamerLogin;
+        InMemoryLogStore.SetJobContext(jobId);
         logger.LogInformation("Starting live download for {Login}, job {JobId}", login, jobId);
 
         // 1. Get playback access token

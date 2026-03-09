@@ -4,11 +4,17 @@ using TwitchDownloader.Hubs;
 using TwitchDownloader.Services;
 using TwitchDownloader.Services.Background;
 using TwitchDownloader.Services.Download;
+using TwitchDownloader.Services.Logging;
 using TwitchDownloader.Services.Twitch;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Downloader;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// In-memory log store — register before building so the provider can reference it
+var logStore = new InMemoryLogStore();
+builder.Services.AddSingleton(logStore);
+builder.Logging.AddProvider(new InMemoryLoggerProvider(logStore));
 
 // Options
 builder.Services.Configure<TwitchDownloaderOptions>(

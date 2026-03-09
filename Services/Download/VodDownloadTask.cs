@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using TwitchDownloader.Data;
 using TwitchDownloader.Models.Entities;
+using TwitchDownloader.Services.Logging;
 using TwitchDownloader.Services.Twitch;
 using Xabe.FFmpeg;
 using Microsoft.Extensions.Options;
@@ -24,6 +25,7 @@ public class VodDownloadTask(
 
         var vodId = job.TwitchItemId;
         var login = job.StreamerLogin;
+        InMemoryLogStore.SetJobContext(jobId);
         logger.LogInformation("Starting VOD download for {VodId}, job {JobId}", vodId, jobId);
 
         // 1. Get VOD playback token
