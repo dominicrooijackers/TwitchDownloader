@@ -1,4 +1,4 @@
-namespace TwitchDownloader.Services.Logging;
+namespace TwitchKickDownloader.Services.Logging;
 
 public record LogEntry(
     int Id,

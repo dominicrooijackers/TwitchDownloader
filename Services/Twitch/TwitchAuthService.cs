@@ -1,9 +1,9 @@
 using System.Text.Json;
 using Microsoft.Extensions.Options;
 
-namespace TwitchDownloader.Services.Twitch;
+namespace TwitchKickDownloader.Services.Twitch;
 
-public class TwitchAuthService(IOptions<TwitchDownloaderOptions> opts, HttpClient http, ILogger<TwitchAuthService> logger)
+public class TwitchAuthService(IOptions<TwitchKickDownloaderOptions> opts, HttpClient http, ILogger<TwitchAuthService> logger)
 {
     private readonly SemaphoreSlim _lock = new(1, 1);
     private string? _token;

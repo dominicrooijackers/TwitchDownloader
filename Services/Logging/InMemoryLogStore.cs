@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace TwitchDownloader.Services.Logging;
+namespace TwitchKickDownloader.Services.Logging;
 
 public class InMemoryLogStore
 {

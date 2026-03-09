@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TwitchDownloader.Models.ViewModels;
+namespace TwitchKickDownloader.Models.ViewModels;
 
 public class SettingsViewModel
 {

@@ -1,4 +1,4 @@
-@model TwitchDownloader.Models.ViewModels.StreamerFormViewModel
+@model TwitchKickDownloader.Models.ViewModels.StreamerFormViewModel
 @{
     ViewData["Title"] = "Add Streamer";
 }
@@ -12,15 +12,23 @@
             <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
             <div class="mb-3">
-                <label asp-for="TwitchLogin" class="form-label"></label>
-                <input asp-for="TwitchLogin" class="form-control" placeholder="e.g. shroud" />
-                <span asp-validation-for="TwitchLogin" class="text-danger"></span>
+                <label asp-for="Platform" class="form-label"></label>
+                <select asp-for="Platform" class="form-select">
+                    <option value="Twitch">Twitch</option>
+                    <option value="Kick">Kick</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="StreamerName" class="form-label"></label>
+                <input asp-for="StreamerName" class="form-control" placeholder="e.g. shroud" />
+                <span asp-validation-for="StreamerName" class="text-danger"></span>
             </div>
 
             <div class="mb-3">
                 <label asp-for="PreferredQuality" class="form-label"></label>
                 <select asp-for="PreferredQuality" class="form-select"
-                        asp-items="@(new SelectList(TwitchDownloader.Models.ViewModels.StreamerFormViewModel.QualityOptions))"></select>
+                        asp-items="@(new SelectList(TwitchKickDownloader.Models.ViewModels.StreamerFormViewModel.QualityOptions))"></select>
             </div>
 
             <div class="card mb-3">

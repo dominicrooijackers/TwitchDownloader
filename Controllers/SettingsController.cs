@@ -1,13 +1,13 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using TwitchDownloader.Models.ViewModels;
-using TwitchDownloader.Services;
+using TwitchKickDownloader.Models.ViewModels;
+using TwitchKickDownloader.Services;
 
-namespace TwitchDownloader.Controllers;
+namespace TwitchKickDownloader.Controllers;
 
 public class SettingsController(
-    IOptions<TwitchDownloaderOptions> opts,
+    IOptions<TwitchKickDownloaderOptions> opts,
     IWebHostEnvironment env) : Controller
 {
     public IActionResult Index()
@@ -59,10 +59,10 @@ public class SettingsController(
         };
 
         var fullSettings = new Dictionary<string, object>(
-            dict.Where(kv => kv.Key != "TwitchDownloader")
+            dict.Where(kv => kv.Key != "TwitchKickDownloader")
                 .Select(kv => new KeyValuePair<string, object>(kv.Key, kv.Value)))
         {
-            ["TwitchDownloader"] = twitchSection
+            ["TwitchKickDownloader"] = twitchSection
         };
 
         return JsonSerializer.Serialize(fullSettings, new JsonSerializerOptions { WriteIndented = true });

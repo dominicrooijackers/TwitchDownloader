@@ -1,4 +1,4 @@
-namespace TwitchDownloader.Models;
+namespace TwitchKickDownloader.Models;
 
 public class ErrorViewModel
 {

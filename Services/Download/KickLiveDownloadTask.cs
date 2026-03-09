@@ -6,56 +6,59 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using TwitchKickDownloader.Data;
 using TwitchKickDownloader.Models.Entities;
+using TwitchKickDownloader.Services.Kick;
 using TwitchKickDownloader.Services.Logging;
-using TwitchKickDownloader.Services.Twitch;
 using Xabe.FFmpeg;
 
 namespace TwitchKickDownloader.Services.Download;
 
-public class LiveDownloadTask(
+public class KickLiveDownloadTask(
     AppDbContext db,
-    TwitchApiService api,
+    KickApiService api,
     StorageService storage,
     DownloadOrchestrator orchestrator,
     IOptions<TwitchKickDownloaderOptions> opts,
-    ILogger<LiveDownloadTask> logger) : IDownloadTask
+    ILogger<KickLiveDownloadTask> logger) : IDownloadTask
 {
-    private record ChatRecord(string Timestamp, string Username, string DisplayName, string Color, string Message);
+    private record ChatRecord(string Timestamp, string Username, string Color, string Message);
 
     public async Task RunAsync(int jobId, CancellationToken ct)
     {
         var job = await db.DownloadJobs.FindAsync([jobId], ct)
             ?? throw new InvalidOperationException($"Job {jobId} not found");
 
-        var login = job.StreamerLogin;
+        var slug = job.StreamerLogin;
         InMemoryLogStore.SetJobContext(jobId);
-        logger.LogInformation("Starting live download for {Login}, job {JobId}", login, jobId);
+        logger.LogInformation("Starting Kick live download for {Slug}, job {JobId}", slug, jobId);
 
-        // 1. Get playback access token
-        var pat = await api.GetPlaybackAccessTokenAsync(login, ct)
-            ?? throw new InvalidOperationException("Failed to get playback access token");
+        // 1. Fetch channel info to get M3U8 and chatroom ID
+        var channel = await api.GetChannelInfoAsync(slug, ct)
+            ?? throw new InvalidOperationException($"Could not fetch Kick channel info for {slug}");
 
-        // 2. Fetch master M3U8
+        var playbackUrl = channel.Livestream?.PlaybackUrl
+            ?? throw new InvalidOperationException("No playback URL in Kick channel info");
+
+        var chatroomId = channel.Chatroom?.Id
+            ?? throw new InvalidOperationException("No chatroom ID in Kick channel info");
+
+        // 2. Resolve variant URL from master M3U8 (or use directly if already a variant)
         using var http = new HttpClient();
-        var usherUrl = $"https://usher.ttvnw.net/api/channel/hls/{login}.m3u8" +
-            $"?allow_source=true&allow_spectre=false&allow_audio_only=true" +
-            $"&sig={pat.Signature}&token={Uri.EscapeDataString(pat.Value)}&p={Random.Shared.Next(1_000_000)}";
+        http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
 
-        var masterM3u8 = await http.GetStringAsync(usherUrl, ct);
-        var variantUrl = SelectVariant(masterM3u8, job.Quality);
-        if (variantUrl is null)
-            throw new InvalidOperationException($"No variant found for quality '{job.Quality}'");
+        var masterM3u8 = await http.GetStringAsync(playbackUrl, ct);
+        var variantUrl = SelectVariant(masterM3u8, job.Quality) ?? playbackUrl;
 
         // 3. Prepare paths
         var now = DateTime.UtcNow;
         var tempPath = storage.GetTempFilePath();
-        var outputPath = storage.GetLiveOutputPath(login, now, job.TwitchItemId);
-        var chatPath = storage.GetLiveChatOutputPath(login, now, job.TwitchItemId);
+        var outputPath = storage.GetLiveOutputPath(slug, now, job.TwitchItemId);
+        var chatPath = storage.GetLiveChatOutputPath(slug, now, job.TwitchItemId);
 
-        // 4. Start IRC chat capture in background
+        // 4. Start Pusher chat capture in background
         var chatMessages = new ConcurrentQueue<ChatRecord>();
-        using var ircCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var ircTask = Task.Run(() => CaptureIrcChatAsync(login, chatMessages, ircCts.Token), CancellationToken.None);
+        using var chatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var chatTask = Task.Run(() => CapturePusherChatAsync(chatroomId, chatMessages, chatCts.Token), CancellationToken.None);
 
         // 5. Segment download loop
         var seenSegments = new HashSet<string>();
@@ -77,15 +80,14 @@ public class LiveDownloadTask(
                 }
                 catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    logger.LogInformation("Stream ended (404) for {Login}", login);
+                    logger.LogInformation("Kick stream ended (404) for {Slug}", slug);
                     break;
                 }
 
-                var segments = ParseSegments(variantM3u8);
+                var segments = ParseSegments(variantM3u8, variantUrl);
                 var newSegments = segments.Where(s => !seenSegments.Contains(s)).ToList();
                 bool streamEnded = variantM3u8.Contains("EXT-X-ENDLIST");
 
-                // Download new segments in parallel (max 4)
                 var dlSemaphore = new SemaphoreSlim(4);
                 var downloads = newSegments.Select(async seg =>
                 {
@@ -109,7 +111,7 @@ public class LiveDownloadTask(
                     lastNewSegmentAt = DateTime.UtcNow;
                 else if ((DateTime.UtcNow - lastNewSegmentAt).TotalSeconds > staleTimeoutSeconds)
                 {
-                    logger.LogInformation("Stream ended (no new segments for {Seconds}s) for {Login}", staleTimeoutSeconds, login);
+                    logger.LogInformation("Kick stream ended (no new segments for {Seconds}s) for {Slug}", staleTimeoutSeconds, slug);
                     break;
                 }
 
@@ -127,8 +129,8 @@ public class LiveDownloadTask(
         }
         finally
         {
-            ircCts.Cancel();
-            try { await ircTask.WaitAsync(TimeSpan.FromSeconds(5), CancellationToken.None); } catch { }
+            chatCts.Cancel();
+            try { await chatTask.WaitAsync(TimeSpan.FromSeconds(5), CancellationToken.None); } catch { }
         }
 
         if (ct.IsCancellationRequested)
@@ -144,7 +146,7 @@ public class LiveDownloadTask(
         // 6. Save chat
         try
         {
-            var chatJson = chatMessages.Select(m => new { m.Timestamp, m.Username, m.DisplayName, m.Color, m.Message });
+            var chatJson = chatMessages.Select(m => new { m.Timestamp, m.Username, m.Color, m.Message });
             await File.WriteAllTextAsync(chatPath,
                 JsonSerializer.Serialize(chatJson, new JsonSerializerOptions { WriteIndented = true }),
                 CancellationToken.None);
@@ -152,7 +154,7 @@ public class LiveDownloadTask(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Failed to write chat for job {JobId}", jobId);
+            logger.LogWarning(ex, "Failed to write Kick chat for job {JobId}", jobId);
         }
 
         // 7. Mux with FFmpeg
@@ -181,102 +183,118 @@ public class LiveDownloadTask(
         job.CompletedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(CancellationToken.None);
         await orchestrator.BroadcastCompletedAsync(jobId, outputPath);
-        logger.LogInformation("Completed live download for {Login}, job {JobId}", login, jobId);
+        logger.LogInformation("Completed Kick live download for {Slug}, job {JobId}", slug, jobId);
     }
 
-    private async Task CaptureIrcChatAsync(string login, ConcurrentQueue<ChatRecord> messages, CancellationToken ct)
+    private async Task CapturePusherChatAsync(long chatroomId, ConcurrentQueue<ChatRecord> messages, CancellationToken ct)
     {
+        const string PusherKey = "32cbd69e4b950bf97679";
+        const string PusherUrl = $"wss://ws-us2.pusher.com/app/{PusherKey}?protocol=7&client=js&version=7.6.0&flash=false";
+        var channel = $"chatrooms.{chatroomId}.v2";
+
         try
         {
             using var ws = new ClientWebSocket();
-            await ws.ConnectAsync(new Uri("wss://irc-ws.chat.twitch.tv:443"), ct);
+            ws.Options.SetRequestHeader("Origin", "https://kick.com");
+            await ws.ConnectAsync(new Uri(PusherUrl), ct);
 
-            async Task SendLine(string text)
+            async Task SendJson(object payload)
             {
-                var bytes = Encoding.UTF8.GetBytes(text + "\r\n");
+                var json = JsonSerializer.Serialize(payload);
+                var bytes = Encoding.UTF8.GetBytes(json);
                 await ws.SendAsync(bytes, WebSocketMessageType.Text, true, ct);
             }
 
-            await SendLine("PASS SCHMOOPIIE");
-            await SendLine("NICK justinfan12345");
-            await SendLine("CAP REQ :twitch.tv/tags");
-            await SendLine($"JOIN #{login}");
-
             var buffer = new byte[65536];
             var sb = new StringBuilder();
+            bool subscribed = false;
+            var pingTimer = DateTime.UtcNow;
 
             while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
             {
+                // Send periodic ping to keep connection alive
+                if ((DateTime.UtcNow - pingTimer).TotalSeconds > 90)
+                {
+                    try { await SendJson(new { @event = "pusher:ping", data = new { } }); } catch { }
+                    pingTimer = DateTime.UtcNow;
+                }
+
                 WebSocketReceiveResult result;
-                try { result = await ws.ReceiveAsync(buffer, ct); }
+                try
+                {
+                    using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                    timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
+                    result = await ws.ReceiveAsync(buffer, timeoutCts.Token);
+                }
+                catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                {
+                    // Timeout — keep looping to check ping timer
+                    continue;
+                }
                 catch (OperationCanceledException) { break; }
 
                 if (result.MessageType == WebSocketMessageType.Close) break;
 
-                sb.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
-                var content = sb.ToString();
-                var lines = content.Split('\n');
-                sb.Clear();
+                var text = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                using var doc = JsonDocument.Parse(text);
+                var root = doc.RootElement;
 
-                // Keep incomplete last line
-                if (!content.EndsWith('\n'))
-                    sb.Append(lines[^1]);
+                if (!root.TryGetProperty("event", out var evtProp)) continue;
+                var evt = evtProp.GetString() ?? "";
 
-                var completeLines = content.EndsWith('\n') ? lines : lines[..^1];
-                foreach (var raw in completeLines)
+                switch (evt)
                 {
-                    var line = raw.TrimEnd('\r');
-                    if (line.StartsWith("PING"))
-                    {
-                        try { await SendLine("PONG :tmi.twitch.tv"); } catch { }
-                        continue;
-                    }
-                    if (!line.Contains("PRIVMSG")) continue;
-                    var record = ParsePrivMsg(line);
-                    if (record is not null) messages.Enqueue(record);
+                    case "pusher:connection_established":
+                        // Subscribe to chatroom channel
+                        await SendJson(new
+                        {
+                            @event = "pusher:subscribe",
+                            data = new { channel, auth = "" }
+                        });
+                        subscribed = true;
+                        logger.LogInformation("Kick Pusher: subscribed to {Channel}", channel);
+                        break;
+
+                    case "App\\Events\\ChatMessageSent" when subscribed:
+                        if (root.TryGetProperty("data", out var dataProp))
+                        {
+                            var dataStr = dataProp.GetString();
+                            if (dataStr is not null)
+                            {
+                                var record = ParseChatMessage(dataStr);
+                                if (record is not null) messages.Enqueue(record);
+                            }
+                        }
+                        break;
                 }
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogWarning(ex, "IRC chat capture error for {Login}", login);
+            logger.LogWarning(ex, "Kick Pusher chat capture error for chatroom {ChatroomId}", chatroomId);
         }
     }
 
-    private static ChatRecord? ParsePrivMsg(string line)
+    private static ChatRecord? ParseChatMessage(string dataJson)
     {
-        // Format: @key=val;key=val :nick!nick@nick.tmi.twitch.tv PRIVMSG #channel :message
         try
         {
-            var tags = new Dictionary<string, string>();
-            var rest = line;
+            using var doc = JsonDocument.Parse(dataJson);
+            var root = doc.RootElement;
 
-            if (rest.StartsWith('@'))
+            var content = root.TryGetProperty("content", out var c) ? c.GetString() ?? "" : "";
+            var createdAt = root.TryGetProperty("created_at", out var ts) ? ts.GetString() ?? "" : "";
+
+            string username = "";
+            string color = "";
+            if (root.TryGetProperty("sender", out var sender))
             {
-                var spaceIdx = rest.IndexOf(' ');
-                var tagStr = rest[1..spaceIdx];
-                rest = rest[(spaceIdx + 1)..];
-                foreach (var tag in tagStr.Split(';'))
-                {
-                    var eq = tag.IndexOf('=');
-                    if (eq >= 0) tags[tag[..eq]] = tag[(eq + 1)..];
-                }
+                username = sender.TryGetProperty("username", out var u) ? u.GetString() ?? "" : "";
+                if (sender.TryGetProperty("identity", out var identity))
+                    color = identity.TryGetProperty("color", out var col) ? col.GetString() ?? "" : "";
             }
 
-            var msgStart = rest.LastIndexOf(" :");
-            if (msgStart < 0) return null;
-            var message = rest[(msgStart + 2)..];
-
-            tags.TryGetValue("display-name", out var displayName);
-            tags.TryGetValue("color", out var color);
-            tags.TryGetValue("tmi-sent-ts", out var ts);
-
-            // Extract nick from :nick!nick@...
-            var nick = "";
-            var nickEnd = rest.IndexOf('!');
-            if (nickEnd > 1) nick = rest[1..nickEnd];
-
-            return new ChatRecord(ts ?? "", nick, displayName ?? nick, color ?? "", message);
+            return new ChatRecord(createdAt, username, color, content);
         }
         catch { return null; }
     }
@@ -302,10 +320,12 @@ public class LiveDownloadTask(
         return match.Url ?? variants[0].Url;
     }
 
-    private static List<string> ParseSegments(string m3u8)
+    private static List<string> ParseSegments(string m3u8, string variantUrl)
     {
+        var baseUrl = variantUrl[..(variantUrl.LastIndexOf('/') + 1)];
         return m3u8.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(l => !l.StartsWith('#') && (l.StartsWith("http") || l.EndsWith(".ts")))
+            .Where(l => !l.StartsWith('#') && (l.StartsWith("http") || l.EndsWith(".ts") || l.EndsWith(".aac")))
+            .Select(l => l.StartsWith("http") ? l : baseUrl + l)
             .ToList();
     }
 }

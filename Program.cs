@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
-using TwitchDownloader.Data;
-using TwitchDownloader.Hubs;
-using TwitchDownloader.Services;
-using TwitchDownloader.Services.Background;
-using TwitchDownloader.Services.Download;
-using TwitchDownloader.Services.Logging;
-using TwitchDownloader.Services.Twitch;
+using TwitchKickDownloader.Data;
+using TwitchKickDownloader.Hubs;
+using TwitchKickDownloader.Services;
+using TwitchKickDownloader.Services.Background;
+using TwitchKickDownloader.Services.Download;
+using TwitchKickDownloader.Services.Kick;
+using TwitchKickDownloader.Services.Logging;
+using TwitchKickDownloader.Services.Twitch;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Downloader;
 
@@ -17,8 +18,8 @@ builder.Services.AddSingleton(logStore);
 builder.Logging.AddProvider(new InMemoryLoggerProvider(logStore));
 
 // Options
-builder.Services.Configure<TwitchDownloaderOptions>(
-    builder.Configuration.GetSection(TwitchDownloaderOptions.Section));
+builder.Services.Configure<TwitchKickDownloaderOptions>(
+    builder.Configuration.GetSection(TwitchKickDownloaderOptions.Section));
 
 // Database — use factory for thread-safe background access
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
@@ -38,10 +39,16 @@ builder.Services.AddHttpClient<TwitchApiService>();  // typed HttpClient for GQL
 builder.Services.AddSingleton<TwitchAuthService>();  // kept for optional credential validation
 builder.Services.AddScoped<TwitchApiService>();
 
+// Kick services
+builder.Services.AddHttpClient<KickApiService>();
+builder.Services.AddScoped<KickApiService>();
+
 // Download services
 builder.Services.AddSingleton<DownloadOrchestrator>();
 builder.Services.AddScoped<LiveDownloadTask>();
 builder.Services.AddScoped<VodDownloadTask>();
+builder.Services.AddScoped<KickLiveDownloadTask>();
+builder.Services.AddScoped<KickVodDownloadTask>();
 builder.Services.AddSingleton<StorageService>();
 
 // Background services
@@ -70,12 +77,12 @@ await using (var scope = app.Services.CreateAsyncScope())
 
     // Reset any jobs interrupted by a previous app crash or restart
     var interruptedJobs = await db.DownloadJobs
-        .Where(j => j.Status == TwitchDownloader.Models.Entities.JobStatus.Downloading ||
-                    j.Status == TwitchDownloader.Models.Entities.JobStatus.Muxing)
+        .Where(j => j.Status == TwitchKickDownloader.Models.Entities.JobStatus.Downloading ||
+                    j.Status == TwitchKickDownloader.Models.Entities.JobStatus.Muxing)
         .ToListAsync();
     foreach (var job in interruptedJobs)
     {
-        job.Status = TwitchDownloader.Models.Entities.JobStatus.Failed;
+        job.Status = TwitchKickDownloader.Models.Entities.JobStatus.Failed;
         job.ErrorMessage = "Interrupted by app restart";
         job.CompletedAt = DateTime.UtcNow;
     }
@@ -84,7 +91,7 @@ await using (var scope = app.Services.CreateAsyncScope())
 }
 
 // FFmpeg setup
-var ffmpegPath = app.Configuration["TwitchDownloader:FfmpegPath"];
+var ffmpegPath = app.Configuration["TwitchKickDownloader:FfmpegPath"];
 if (!string.IsNullOrEmpty(ffmpegPath))
 {
     FFmpeg.SetExecutablesPath(ffmpegPath);

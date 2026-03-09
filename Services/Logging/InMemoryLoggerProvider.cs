@@ -1,4 +1,4 @@
-namespace TwitchDownloader.Services.Logging;
+namespace TwitchKickDownloader.Services.Logging;
 
 public class InMemoryLoggerProvider(InMemoryLogStore store) : ILoggerProvider
 {

@@ -11,8 +11,8 @@ using TwitchKickDownloader.Data;
 namespace TwitchKickDownloader.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260309141609_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260309200458_RenameStreamerLogin")]
+    partial class RenameStreamerLogin
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -43,6 +43,10 @@ namespace TwitchKickDownloader.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("OutputFilePath")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<float?>("ProgressPct")
@@ -128,17 +132,21 @@ namespace TwitchKickDownloader.Migrations
                     b.Property<bool>("MonitorVods")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PreferredQuality")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("TwitchLogin")
+                    b.Property<string>("StreamerName")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TwitchLogin")
+                    b.HasIndex("StreamerName", "Platform")
                         .IsUnique();
 
                     b.ToTable("Streamers");

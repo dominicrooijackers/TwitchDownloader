@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TwitchDownloader.Data;
-using TwitchDownloader.Models.Entities;
+using TwitchKickDownloader.Data;
+using TwitchKickDownloader.Models.Entities;
 
-namespace TwitchDownloader.Controllers;
+namespace TwitchKickDownloader.Controllers;
 
 public class JobsController(AppDbContext db) : Controller
 {

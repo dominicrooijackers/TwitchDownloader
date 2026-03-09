@@ -1,9 +1,9 @@
-@model TwitchDownloader.Models.ViewModels.StreamerFormViewModel
+@model TwitchKickDownloader.Models.ViewModels.StreamerFormViewModel
 @{
     ViewData["Title"] = "Edit Streamer";
 }
 
-<h2><i class="bi bi-pencil-square"></i> Edit Streamer: @Model.TwitchLogin</h2>
+<h2><i class="bi bi-pencil-square"></i> Edit Streamer: @Model.StreamerName <span class="badge @(Model.Platform == TwitchKickDownloader.Models.Entities.Platform.Kick ? "text-bg-success" : "text-bg-primary") fs-6">@Model.Platform</span></h2>
 
 <div class="row">
     <div class="col-md-6">
@@ -14,7 +14,7 @@
             <div class="mb-3">
                 <label asp-for="PreferredQuality" class="form-label"></label>
                 <select asp-for="PreferredQuality" class="form-select"
-                        asp-items="@(new SelectList(TwitchDownloader.Models.ViewModels.StreamerFormViewModel.QualityOptions))"></select>
+                        asp-items="@(new SelectList(TwitchKickDownloader.Models.ViewModels.StreamerFormViewModel.QualityOptions))"></select>
             </div>
 
             <div class="card mb-3">

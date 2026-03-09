@@ -1,9 +1,9 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 
-namespace TwitchDownloader.Services;
+namespace TwitchKickDownloader.Services;
 
-public partial class StorageService(IOptions<TwitchDownloaderOptions> opts, ILogger<StorageService> logger)
+public partial class StorageService(IOptions<TwitchKickDownloaderOptions> opts, ILogger<StorageService> logger)
 {
     public string GetLiveOutputPath(string login, DateTime startedAt, string streamId)
     {

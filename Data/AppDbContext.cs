@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using TwitchDownloader.Models.Entities;
+using TwitchKickDownloader.Models.Entities;
 
-namespace TwitchDownloader.Data;
+namespace TwitchKickDownloader.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
@@ -19,7 +19,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         modelBuilder.Entity<Streamer>(e =>
         {
-            e.HasIndex(s => s.TwitchLogin).IsUnique();
+            e.HasIndex(s => new { s.StreamerName, s.Platform }).IsUnique();
+            e.Property(s => s.Platform).HasConversion<string>();
         });
 
         modelBuilder.Entity<DownloadJob>(e =>
@@ -27,6 +28,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(j => j.Status);
             e.Property(j => j.JobType).HasConversion<string>();
             e.Property(j => j.Status).HasConversion<string>();
+            e.Property(j => j.Platform).HasConversion<string>();
         });
 
         modelBuilder.Entity<KnownVod>(e =>

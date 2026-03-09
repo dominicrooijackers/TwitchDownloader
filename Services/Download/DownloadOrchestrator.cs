@@ -2,16 +2,16 @@ using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using TwitchDownloader.Data;
-using TwitchDownloader.Hubs;
-using TwitchDownloader.Models.Entities;
+using TwitchKickDownloader.Data;
+using TwitchKickDownloader.Hubs;
+using TwitchKickDownloader.Models.Entities;
 
-namespace TwitchDownloader.Services.Download;
+namespace TwitchKickDownloader.Services.Download;
 
 public class DownloadOrchestrator(
     IServiceScopeFactory scopeFactory,
     IHubContext<DownloadHub> hub,
-    IOptions<TwitchDownloaderOptions> opts,
+    IOptions<TwitchKickDownloaderOptions> opts,
     ILogger<DownloadOrchestrator> logger) : IDisposable
 {
     private readonly SemaphoreSlim _slots = new(opts.Value.MaxConcurrentDownloads, opts.Value.MaxConcurrentDownloads);
@@ -19,7 +19,7 @@ public class DownloadOrchestrator(
     private readonly SemaphoreSlim _queueLock = new(1, 1);
 
     public async Task<int> EnqueueAsync(
-        string streamerLogin, JobType jobType, string twitchItemId,
+        string streamerLogin, Platform platform, JobType jobType, string twitchItemId,
         string title, string quality, CancellationToken ct = default)
     {
         await using var scope = scopeFactory.CreateAsyncScope();
@@ -28,6 +28,7 @@ public class DownloadOrchestrator(
         var job = new DownloadJob
         {
             StreamerLogin = streamerLogin,
+            Platform = platform,
             JobType = jobType,
             Status = JobStatus.Queued,
             TwitchItemId = twitchItemId,
@@ -105,9 +106,13 @@ public class DownloadOrchestrator(
                 try
                 {
                     var taskScope = scopeFactory.CreateAsyncScope();
-                    var taskService = job.JobType == JobType.LiveStream
-                        ? (IDownloadTask)taskScope.ServiceProvider.GetRequiredService<LiveDownloadTask>()
-                        : taskScope.ServiceProvider.GetRequiredService<VodDownloadTask>();
+                    IDownloadTask taskService = (job.JobType, job.Platform) switch
+                    {
+                        (JobType.LiveStream, Platform.Kick) => taskScope.ServiceProvider.GetRequiredService<KickLiveDownloadTask>(),
+                        (_, Platform.Kick) => taskScope.ServiceProvider.GetRequiredService<KickVodDownloadTask>(),
+                        (JobType.LiveStream, _) => taskScope.ServiceProvider.GetRequiredService<LiveDownloadTask>(),
+                        _ => taskScope.ServiceProvider.GetRequiredService<VodDownloadTask>()
+                    };
 
                     await taskService.RunAsync(job.Id, cts.Token);
                 }

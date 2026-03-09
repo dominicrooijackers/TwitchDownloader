@@ -1,8 +1,8 @@
-namespace TwitchDownloader.Services;
+namespace TwitchKickDownloader.Services;
 
-public class TwitchDownloaderOptions
+public class TwitchKickDownloaderOptions
 {
-    public const string Section = "TwitchDownloader";
+    public const string Section = "TwitchKickDownloader";
     public string ClientId { get; set; } = "";
     public string ClientSecret { get; set; } = "";
     public string StoragePath { get; set; } = "C:\\TwitchRecordings";

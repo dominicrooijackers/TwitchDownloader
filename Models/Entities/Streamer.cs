@@ -1,10 +1,11 @@
-namespace TwitchDownloader.Models.Entities;
+namespace TwitchKickDownloader.Models.Entities;
 
 public class Streamer
 {
     public int Id { get; set; }
-    public string TwitchLogin { get; set; } = "";
+    public string StreamerName { get; set; } = "";
     public string DisplayName { get; set; } = "";
+    public Platform Platform { get; set; } = Platform.Twitch;
     public bool MonitorLive { get; set; }
     public bool MonitorVods { get; set; }
     public string PreferredQuality { get; set; } = "best";
