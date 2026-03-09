@@ -5,13 +5,15 @@ using TwitchDownloader.Models.Entities;
 using TwitchDownloader.Models.ViewModels;
 using TwitchDownloader.Services;
 using TwitchDownloader.Services.Download;
+using TwitchDownloader.Services.Kick;
 using TwitchDownloader.Services.Twitch;
 
 namespace TwitchDownloader.Controllers;
 
 public class StreamersController(
     AppDbContext db,
-    TwitchApiService api,
+    TwitchApiService twitchApi,
+    KickApiService kickApi,
     DownloadOrchestrator orchestrator,
     StorageService storage) : Controller
 {
@@ -34,19 +36,29 @@ public class StreamersController(
 
         model.TwitchLogin = model.TwitchLogin.Trim().ToLowerInvariant();
 
-        if (await db.Streamers.AnyAsync(s => s.TwitchLogin == model.TwitchLogin))
+        if (await db.Streamers.AnyAsync(s => s.TwitchLogin == model.TwitchLogin && s.Platform == model.Platform))
         {
-            ModelState.AddModelError("TwitchLogin", "This streamer already exists.");
+            ModelState.AddModelError("TwitchLogin", "This streamer already exists on this platform.");
             return View(model);
         }
 
-        var user = await api.GetUserAsync(model.TwitchLogin);
-        var displayName = user?.DisplayName ?? model.TwitchLogin;
+        string displayName;
+        if (model.Platform == Platform.Kick)
+        {
+            var channel = await kickApi.GetChannelInfoAsync(model.TwitchLogin);
+            displayName = channel?.User?.Username ?? model.TwitchLogin;
+        }
+        else
+        {
+            var user = await twitchApi.GetUserAsync(model.TwitchLogin);
+            displayName = user?.DisplayName ?? model.TwitchLogin;
+        }
 
         db.Streamers.Add(new Streamer
         {
             TwitchLogin = model.TwitchLogin,
             DisplayName = displayName,
+            Platform = model.Platform,
             MonitorLive = model.MonitorLive,
             MonitorVods = model.MonitorVods,
             PreferredQuality = model.PreferredQuality,
@@ -67,6 +79,7 @@ public class StreamersController(
         {
             Id = streamer.Id,
             TwitchLogin = streamer.TwitchLogin,
+            Platform = streamer.Platform,
             MonitorLive = streamer.MonitorLive,
             MonitorVods = streamer.MonitorVods,
             PreferredQuality = streamer.PreferredQuality,
@@ -105,9 +118,23 @@ public class StreamersController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetVods(string login)
+    public async Task<IActionResult> GetVods(string login, string platform = "Twitch")
     {
-        var videos = await api.GetUserVideosForStreamerAsync(login);
+        if (Enum.TryParse<Platform>(platform, out var p) && p == Platform.Kick)
+        {
+            var kickVideos = await kickApi.GetVideosAsync(login);
+            return Json(kickVideos.Select(v => new
+            {
+                v.Id,
+                v.Title,
+                Duration = TimeSpan.FromSeconds(v.Duration).ToString(@"h\:mm\:ss"),
+                v.CreatedAt,
+                ThumbnailUrl = v.Thumbnail?.Src ?? "",
+                ViewCount = v.Views
+            }));
+        }
+
+        var videos = await twitchApi.GetUserVideosForStreamerAsync(login);
         return Json(videos.Select(v => new
         {
             v.Id, v.Title, v.Duration, v.CreatedAt, v.ThumbnailUrl, v.ViewCount
@@ -122,12 +149,13 @@ public class StreamersController(
         return Json(new { exists = System.IO.File.Exists(path) });
     }
 
-    public async Task<IActionResult> DownloadVod([FromForm] string login, [FromForm] string vodId, [FromForm] string title, [FromForm] string quality)
+    public async Task<IActionResult> DownloadVod([FromForm] string login, [FromForm] string vodId, [FromForm] string title, [FromForm] string quality, [FromForm] string platform = "Twitch")
     {
-        var streamer = await db.Streamers.FirstOrDefaultAsync(s => s.TwitchLogin == login);
+        var p = Enum.TryParse<Platform>(platform, out var parsed) ? parsed : Platform.Twitch;
+        var streamer = await db.Streamers.FirstOrDefaultAsync(s => s.TwitchLogin == login && s.Platform == p);
         var effectiveQuality = string.IsNullOrEmpty(quality) ? (streamer?.PreferredQuality ?? "best") : quality;
 
-        await orchestrator.EnqueueAsync(login, JobType.VodOnDemand, vodId, title, effectiveQuality);
+        await orchestrator.EnqueueAsync(login, p, JobType.VodOnDemand, vodId, title, effectiveQuality);
         return RedirectToAction("Index", "Jobs");
     }
 }

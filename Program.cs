@@ -4,6 +4,7 @@ using TwitchDownloader.Hubs;
 using TwitchDownloader.Services;
 using TwitchDownloader.Services.Background;
 using TwitchDownloader.Services.Download;
+using TwitchDownloader.Services.Kick;
 using TwitchDownloader.Services.Logging;
 using TwitchDownloader.Services.Twitch;
 using Xabe.FFmpeg;
@@ -38,10 +39,16 @@ builder.Services.AddHttpClient<TwitchApiService>();  // typed HttpClient for GQL
 builder.Services.AddSingleton<TwitchAuthService>();  // kept for optional credential validation
 builder.Services.AddScoped<TwitchApiService>();
 
+// Kick services
+builder.Services.AddHttpClient<KickApiService>();
+builder.Services.AddScoped<KickApiService>();
+
 // Download services
 builder.Services.AddSingleton<DownloadOrchestrator>();
 builder.Services.AddScoped<LiveDownloadTask>();
 builder.Services.AddScoped<VodDownloadTask>();
+builder.Services.AddScoped<KickLiveDownloadTask>();
+builder.Services.AddScoped<KickVodDownloadTask>();
 builder.Services.AddSingleton<StorageService>();
 
 // Background services

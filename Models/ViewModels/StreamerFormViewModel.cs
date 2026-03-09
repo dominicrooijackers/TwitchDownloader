@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using TwitchDownloader.Models.Entities;
 
 namespace TwitchDownloader.Models.ViewModels;
 
@@ -7,8 +8,11 @@ public class StreamerFormViewModel
     public int Id { get; set; }
 
     [Required]
-    [Display(Name = "Twitch Login")]
+    [Display(Name = "Login / Channel Slug")]
     public string TwitchLogin { get; set; } = "";
+
+    [Display(Name = "Platform")]
+    public Platform Platform { get; set; } = Platform.Twitch;
 
     [Display(Name = "Monitor Live")]
     public bool MonitorLive { get; set; }

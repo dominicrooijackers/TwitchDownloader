@@ -12,6 +12,14 @@
             <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
             <div class="mb-3">
+                <label asp-for="Platform" class="form-label"></label>
+                <select asp-for="Platform" class="form-select">
+                    <option value="Twitch">Twitch</option>
+                    <option value="Kick">Kick</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
                 <label asp-for="TwitchLogin" class="form-label"></label>
                 <input asp-for="TwitchLogin" class="form-control" placeholder="e.g. shroud" />
                 <span asp-validation-for="TwitchLogin" class="text-danger"></span>

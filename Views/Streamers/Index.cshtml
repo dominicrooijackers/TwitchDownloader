@@ -31,13 +31,17 @@
         {
             <table class="table table-hover">
                 <thead><tr>
-                    <th>Streamer</th><th>Quality</th><th>Actions</th>
+                    <th>Streamer</th><th>Platform</th><th>Quality</th><th>Actions</th>
                 </tr></thead>
                 <tbody>
                 @foreach (var s in Model.LiveStreamers)
                 {
                     <tr>
                         <td><strong>@s.DisplayName</strong> <small class="text-muted">@s.TwitchLogin</small></td>
+                        <td>@if (s.Platform == TwitchDownloader.Models.Entities.Platform.Kick)
+                            { <span class="badge text-bg-success">Kick</span> }
+                            else
+                            { <span class="badge text-bg-primary">Twitch</span> }</td>
                         <td><span class="badge bg-secondary">@s.PreferredQuality</span></td>
                         <td>
                             <a asp-action="Edit" asp-route-id="@s.Id" class="btn btn-sm btn-outline-secondary">
@@ -65,13 +69,17 @@
         {
             <table class="table table-hover">
                 <thead><tr>
-                    <th>Streamer</th><th>Quality</th><th>Auto-Download</th><th>Actions</th>
+                    <th>Streamer</th><th>Platform</th><th>Quality</th><th>Auto-Download</th><th>Actions</th>
                 </tr></thead>
                 <tbody>
                 @foreach (var s in Model.VodStreamers)
                 {
                     <tr>
                         <td><strong>@s.DisplayName</strong> <small class="text-muted">@s.TwitchLogin</small></td>
+                        <td>@if (s.Platform == TwitchDownloader.Models.Entities.Platform.Kick)
+                            { <span class="badge text-bg-success">Kick</span> }
+                            else
+                            { <span class="badge text-bg-primary">Twitch</span> }</td>
                         <td><span class="badge bg-secondary">@s.PreferredQuality</span></td>
                         <td>
                             @if (s.AutoDownloadVods)
@@ -80,7 +88,7 @@
                             { <span class="badge text-bg-secondary">Manual</span> }
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="openVodBrowser('@s.TwitchLogin', '@s.PreferredQuality')">
+                            <button class="btn btn-sm btn-outline-primary" onclick="openVodBrowser('@s.TwitchLogin', '@s.PreferredQuality', '@s.Platform')">
                                 <i class="bi bi-collection-play"></i> Browse VODs
                             </button>
                             <a asp-action="Edit" asp-route-id="@s.Id" class="btn btn-sm btn-outline-secondary">
@@ -140,16 +148,18 @@
 <script>
 let currentLogin = '';
 let currentQuality = 'best';
+let currentPlatform = 'Twitch';
 const vodModal = new bootstrap.Modal(document.getElementById('vodModal'));
 const vodOverwriteModal = new bootstrap.Modal(document.getElementById('vodOverwriteModal'));
 
-function openVodBrowser(login, quality) {
+function openVodBrowser(login, quality, platform) {
     currentLogin = login;
     currentQuality = quality;
-    document.getElementById('vodModalLogin').textContent = login;
+    currentPlatform = platform || 'Twitch';
+    document.getElementById('vodModalLogin').textContent = login + (currentPlatform === 'Kick' ? ' (Kick)' : '');
     document.getElementById('vodList').innerHTML = '<div class="col-12 text-center"><div class="spinner-border"></div></div>';
     vodModal.show();
-    fetch(`/Streamers/GetVods?login=${encodeURIComponent(login)}`)
+    fetch(`/Streamers/GetVods?login=${encodeURIComponent(login)}&platform=${encodeURIComponent(currentPlatform)}`)
         .then(r => r.json())
         .then(vods => renderVods(vods))
         .catch(e => { document.getElementById('vodList').innerHTML = '<div class="col-12 text-danger">Failed to load VODs.</div>'; });
@@ -202,7 +212,7 @@ function submitDownload(vodId, title) {
     const form = document.createElement('form');
     form.method = 'post';
     form.action = '/Streamers/DownloadVod';
-    const fields = { '__RequestVerificationToken': getAntiForgeryToken(), login: currentLogin, vodId, title, quality: currentQuality };
+    const fields = { '__RequestVerificationToken': getAntiForgeryToken(), login: currentLogin, vodId, title, quality: currentQuality, platform: currentPlatform };
     for (const [name, value] of Object.entries(fields)) {
         const input = document.createElement('input');
         input.type = 'hidden';
