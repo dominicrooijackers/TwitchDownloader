@@ -57,16 +57,17 @@ public class DownloadOrchestrator(
         }
         else
         {
-            // Cancel queued job
+            // Cancel queued job, or orphaned job left over from a previous app restart
             await using var scope = scopeFactory.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var job = await db.DownloadJobs.FindAsync(jobId);
-            if (job is { Status: JobStatus.Queued })
+            if (job is { Status: JobStatus.Queued or JobStatus.Downloading or JobStatus.Muxing })
             {
                 job.Status = JobStatus.Cancelled;
                 job.CompletedAt = DateTime.UtcNow;
                 await db.SaveChangesAsync();
                 await hub.Clients.All.SendAsync("JobStatusChanged", jobId, JobStatus.Cancelled.ToString(), null);
+                logger.LogInformation("Cancelled orphaned job {JobId}", jobId);
             }
         }
     }

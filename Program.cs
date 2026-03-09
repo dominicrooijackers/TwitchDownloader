@@ -61,6 +61,20 @@ await using (var scope = app.Services.CreateAsyncScope())
     // Cleanup old temp files
     var storageService = scope.ServiceProvider.GetRequiredService<StorageService>();
     storageService.CleanupOldTempFiles();
+
+    // Reset any jobs interrupted by a previous app crash or restart
+    var interruptedJobs = await db.DownloadJobs
+        .Where(j => j.Status == TwitchDownloader.Models.Entities.JobStatus.Downloading ||
+                    j.Status == TwitchDownloader.Models.Entities.JobStatus.Muxing)
+        .ToListAsync();
+    foreach (var job in interruptedJobs)
+    {
+        job.Status = TwitchDownloader.Models.Entities.JobStatus.Failed;
+        job.ErrorMessage = "Interrupted by app restart";
+        job.CompletedAt = DateTime.UtcNow;
+    }
+    if (interruptedJobs.Count > 0)
+        await db.SaveChangesAsync();
 }
 
 // FFmpeg setup

@@ -59,6 +59,8 @@ public class LiveDownloadTask(
         var seenSegments = new HashSet<string>();
         long totalBytes = 0;
         var progressTimer = DateTime.UtcNow;
+        var lastNewSegmentAt = DateTime.UtcNow;
+        const int staleTimeoutSeconds = 60;
 
         try
         {
@@ -100,6 +102,14 @@ public class LiveDownloadTask(
                 }).ToList();
 
                 await Task.WhenAll(downloads);
+
+                if (newSegments.Count > 0)
+                    lastNewSegmentAt = DateTime.UtcNow;
+                else if ((DateTime.UtcNow - lastNewSegmentAt).TotalSeconds > staleTimeoutSeconds)
+                {
+                    logger.LogInformation("Stream ended (no new segments for {Seconds}s) for {Login}", staleTimeoutSeconds, login);
+                    break;
+                }
 
                 if (DateTime.UtcNow - progressTimer > TimeSpan.FromSeconds(5))
                 {
