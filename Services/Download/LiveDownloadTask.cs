@@ -49,8 +49,8 @@ public class LiveDownloadTask(
         // 3. Prepare paths
         var now = DateTime.UtcNow;
         var tempPath = storage.GetTempFilePath();
-        var outputPath = storage.GetLiveOutputPath(login, now, job.TwitchItemId);
-        var chatPath = storage.GetLiveChatOutputPath(login, now, job.TwitchItemId);
+        var outputPath = storage.GetLiveOutputPath(login, Platform.Twitch, now, job.TwitchItemId);
+        var chatPath = storage.GetLiveChatOutputPath(login, Platform.Twitch, now, job.TwitchItemId);
 
         // 4. Start IRC chat capture in background
         var chatMessages = new ConcurrentQueue<ChatRecord>();

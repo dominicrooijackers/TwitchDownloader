@@ -192,7 +192,7 @@ document.getElementById('vodList').addEventListener('click', function(e) {
 });
 
 function checkAndDownload(vodId, title) {
-    fetch(`/Streamers/VodExists?login=${encodeURIComponent(currentLogin)}&vodId=${encodeURIComponent(vodId)}&title=${encodeURIComponent(title)}`)
+    fetch(`/Streamers/VodExists?login=${encodeURIComponent(currentLogin)}&vodId=${encodeURIComponent(vodId)}&title=${encodeURIComponent(title)}&platform=${encodeURIComponent(currentPlatform)}`)
         .then(r => r.json())
         .then(data => {
             if (data.exists) {

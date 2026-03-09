@@ -1,40 +1,41 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
+using TwitchKickDownloader.Models.Entities;
 
 namespace TwitchKickDownloader.Services;
 
 public partial class StorageService(IOptions<TwitchKickDownloaderOptions> opts, ILogger<StorageService> logger)
 {
-    public string GetLiveOutputPath(string login, DateTime startedAt, string streamId)
+    public string GetLiveOutputPath(string login, Platform platform, DateTime startedAt, string streamId)
     {
-        var dir = GetLiveDir(login);
+        var dir = GetLiveDir(login, platform);
         Directory.CreateDirectory(dir);
         var timestamp = startedAt.ToString("yyyy-MM-dd_HH-mm-ss");
         return Path.Combine(dir, $"{login}_{timestamp}_{streamId}.mp4");
     }
 
-    public string GetLiveChatOutputPath(string login, DateTime startedAt, string streamId)
+    public string GetLiveChatOutputPath(string login, Platform platform, DateTime startedAt, string streamId)
     {
-        var dir = GetLiveDir(login);
+        var dir = GetLiveDir(login, platform);
         Directory.CreateDirectory(dir);
         var timestamp = startedAt.ToString("yyyy-MM-dd_HH-mm-ss");
         return Path.Combine(dir, $"{login}_{timestamp}_{streamId}_chat.json");
     }
 
-    public string GetVodOutputPath(string login, string vodId, string title, string? customPath = null)
+    public string GetVodOutputPath(string login, Platform platform, string vodId, string title, string? customPath = null)
     {
         var dir = customPath is not null
-            ? Path.Combine(customPath, login, "VODs")
-            : GetVodDir(login);
+            ? Path.Combine(customPath, platform.ToString(), login, "VODs")
+            : GetVodDir(login, platform);
         Directory.CreateDirectory(dir);
         return Path.Combine(dir, $"{vodId}_{SanitizeTitle(title)}.mp4");
     }
 
-    public string GetVodChatOutputPath(string login, string vodId, string title, string? customPath = null)
+    public string GetVodChatOutputPath(string login, Platform platform, string vodId, string title, string? customPath = null)
     {
         var dir = customPath is not null
-            ? Path.Combine(customPath, login, "VODs")
-            : GetVodDir(login);
+            ? Path.Combine(customPath, platform.ToString(), login, "VODs")
+            : GetVodDir(login, platform);
         Directory.CreateDirectory(dir);
         return Path.Combine(dir, $"{vodId}_{SanitizeTitle(title)}_chat.json");
     }
@@ -75,11 +76,11 @@ public partial class StorageService(IOptions<TwitchKickDownloaderOptions> opts, 
         return safe.Length > 80 ? safe[..80] : safe;
     }
 
-    private string GetLiveDir(string login) =>
-        Path.Combine(opts.Value.StoragePath, login, "Live");
+    private string GetLiveDir(string login, Platform platform) =>
+        Path.Combine(opts.Value.StoragePath, platform.ToString(), login, "Live");
 
-    private string GetVodDir(string login) =>
-        Path.Combine(opts.Value.StoragePath, login, "VODs");
+    private string GetVodDir(string login, Platform platform) =>
+        Path.Combine(opts.Value.StoragePath, platform.ToString(), login, "VODs");
 
     private string GetTmpDir() =>
         Path.Combine(opts.Value.StoragePath, ".tmp");

@@ -60,8 +60,8 @@ public class VodDownloadTask(
 
         // 4. Prepare paths
         var tempPath = storage.GetTempFilePath();
-        var outputPath = storage.GetVodOutputPath(login, vodId, job.Title);
-        var chatPath = storage.GetVodChatOutputPath(login, vodId, job.Title);
+        var outputPath = storage.GetVodOutputPath(login, Platform.Twitch, vodId, job.Title);
+        var chatPath = storage.GetVodChatOutputPath(login, Platform.Twitch, vodId, job.Title);
 
         // 5. Download all segments with progress
         long totalBytes = 0;

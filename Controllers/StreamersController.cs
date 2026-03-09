@@ -142,10 +142,11 @@ public class StreamersController(
     }
 
     [HttpGet]
-    public async Task<IActionResult> VodExists(string login, string vodId, string title)
+    public async Task<IActionResult> VodExists(string login, string vodId, string title, string platform = "Twitch")
     {
-        var streamer = await db.Streamers.FirstOrDefaultAsync(s => s.StreamerName == login);
-        var path = storage.GetVodOutputPath(login, vodId, title, streamer?.CustomOutputPath);
+        var p = Enum.TryParse<Platform>(platform, out var parsed) ? parsed : Platform.Twitch;
+        var streamer = await db.Streamers.FirstOrDefaultAsync(s => s.StreamerName == login && s.Platform == p);
+        var path = storage.GetVodOutputPath(login, p, vodId, title, streamer?.CustomOutputPath);
         return Json(new { exists = System.IO.File.Exists(path) });
     }
 

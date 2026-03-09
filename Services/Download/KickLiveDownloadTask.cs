@@ -52,8 +52,8 @@ public class KickLiveDownloadTask(
         // 3. Prepare paths
         var now = DateTime.UtcNow;
         var tempPath = storage.GetTempFilePath();
-        var outputPath = storage.GetLiveOutputPath(slug, now, job.TwitchItemId);
-        var chatPath = storage.GetLiveChatOutputPath(slug, now, job.TwitchItemId);
+        var outputPath = storage.GetLiveOutputPath(slug, Platform.Kick, now, job.TwitchItemId);
+        var chatPath = storage.GetLiveChatOutputPath(slug, Platform.Kick, now, job.TwitchItemId);
 
         // 4. Start Pusher chat capture in background
         var chatMessages = new ConcurrentQueue<ChatRecord>();

@@ -36,7 +36,7 @@ public class KickVodDownloadTask(
 
         // 2. Prepare paths
         var tempPath = storage.GetTempFilePath();
-        var outputPath = storage.GetVodOutputPath(slug, vodId, job.Title);
+        var outputPath = storage.GetVodOutputPath(slug, Platform.Kick, vodId, job.Title);
 
         using var http = new HttpClient();
         http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
