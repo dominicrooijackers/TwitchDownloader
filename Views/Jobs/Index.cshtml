@@ -1,0 +1,88 @@
+@model List<TwitchDownloader.Models.Entities.DownloadJob>
+@{
+    ViewData["Title"] = "Download Jobs";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-list-task"></i> Download Jobs</h2>
+</div>
+
+<div id="jobs-container">
+@foreach (var job in Model)
+{
+    <div class="card mb-2 job-card" id="job-@job.Id" data-status="@job.Status.ToString().ToLower()">
+        <div class="card-body py-2 px-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>@job.StreamerLogin</strong>
+                    <span class="badge @GetBadgeClass(job.Status) ms-1">@job.Status</span>
+                    <span class="badge bg-secondary ms-1">@job.JobType</span>
+                    <small class="text-muted ms-2">@job.Title</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <small class="text-muted">@job.StartedAt.ToString("MM/dd HH:mm")</small>
+                    @if (job.BytesDownloaded > 0)
+                    {
+                        <small class="text-muted bytes-display">@FormatBytes(job.BytesDownloaded)</small>
+                    }
+                    @if (job.Status == TwitchDownloader.Models.Entities.JobStatus.Queued ||
+                         job.Status == TwitchDownloader.Models.Entities.JobStatus.Downloading ||
+                         job.Status == TwitchDownloader.Models.Entities.JobStatus.Muxing)
+                    {
+                        <button class="btn btn-sm btn-outline-danger cancel-btn" onclick="cancelJob(@job.Id)">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </button>
+                    }
+                </div>
+            </div>
+            @if (job.ProgressPct.HasValue)
+            {
+                <div class="progress mt-1" style="height:6px">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated"
+                         role="progressbar" style="width:@(job.ProgressPct.Value.ToString("F0"))%"></div>
+                </div>
+            }
+            else if (job.Status == TwitchDownloader.Models.Entities.JobStatus.Downloading)
+            {
+                <div class="progress mt-1" style="height:6px">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
+                         role="progressbar" style="width:100%"></div>
+                </div>
+            }
+            @if (job.ErrorMessage is not null)
+            {
+                <small class="text-danger">@job.ErrorMessage</small>
+            }
+        </div>
+    </div>
+}
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-inbox fs-1"></i>
+        <p>No download jobs yet. Add streamers and enable monitoring to get started.</p>
+    </div>
+}
+
+@functions {
+    string GetBadgeClass(TwitchDownloader.Models.Entities.JobStatus status) => status switch
+    {
+        TwitchDownloader.Models.Entities.JobStatus.Queued => "bg-secondary",
+        TwitchDownloader.Models.Entities.JobStatus.Downloading => "bg-primary",
+        TwitchDownloader.Models.Entities.JobStatus.Muxing => "bg-info text-dark",
+        TwitchDownloader.Models.Entities.JobStatus.Completed => "bg-success",
+        TwitchDownloader.Models.Entities.JobStatus.Failed => "bg-danger",
+        TwitchDownloader.Models.Entities.JobStatus.Cancelled => "bg-warning text-dark",
+        _ => "bg-secondary"
+    };
+
+    string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        if (bytes < 1024 * 1024 * 1024) return $"{bytes / 1024.0 / 1024.0:F1} MB";
+        return $"{bytes / 1024.0 / 1024.0 / 1024.0:F2} GB";
+    }
+}

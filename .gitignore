@@ -1,0 +1,47 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+## EF Core
+# Keep Migrations but ignore the compiled snapshots handled by obj/
+# (Migrations/*.cs are checked in)
+
+## SQLite database (runtime data — not source)
+*.db
+*.db-shm
+*.db-wal
+
+## FFmpeg binaries (auto-downloaded at runtime)
+ffmpeg.exe
+ffprobe.exe
+ffmpeg
+ffprobe
+
+## Temp download files
+*.ts
+
+## Logs
+logs/
+*.log
+
+## Publish output
+publish/
+
+## User secrets / local overrides
+appsettings.Development.json
+appsettings.Local.json
+
+## Screenshots (dev artifacts)
+screenshot_*.png
+
+## Claude Code local settings
+.claude/
+
+## Scaffold lib folder (unused — layout uses CDN)
+wwwroot/lib/
+
+## Scaffold leftovers
+version.json

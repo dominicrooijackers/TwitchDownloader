@@ -1,0 +1,61 @@
+@model TwitchDownloader.Models.ViewModels.StreamerFormViewModel
+@{
+    ViewData["Title"] = "Add Streamer";
+}
+
+<h2><i class="bi bi-person-plus-fill"></i> Add Streamer</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="TwitchLogin" class="form-label"></label>
+                <input asp-for="TwitchLogin" class="form-control" placeholder="e.g. shroud" />
+                <span asp-validation-for="TwitchLogin" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="PreferredQuality" class="form-label"></label>
+                <select asp-for="PreferredQuality" class="form-select"
+                        asp-items="@(new SelectList(TwitchDownloader.Models.ViewModels.StreamerFormViewModel.QualityOptions))"></select>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">Live Monitoring</div>
+                <div class="card-body">
+                    <div class="form-check">
+                        <input asp-for="MonitorLive" class="form-check-input" type="checkbox" />
+                        <label asp-for="MonitorLive" class="form-check-label">Monitor for live streams</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">VOD Monitoring</div>
+                <div class="card-body">
+                    <div class="form-check mb-2">
+                        <input asp-for="MonitorVods" class="form-check-input" type="checkbox" />
+                        <label asp-for="MonitorVods" class="form-check-label">Monitor for new VODs</label>
+                    </div>
+                    <div class="form-check">
+                        <input asp-for="AutoDownloadVods" class="form-check-input" type="checkbox" />
+                        <label asp-for="AutoDownloadVods" class="form-check-label">Auto-download new VODs</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="CustomOutputPath" class="form-label"></label>
+                <input asp-for="CustomOutputPath" class="form-control" placeholder="Leave empty for default storage path" />
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> Add Streamer</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,172 @@
+@model TwitchDownloader.Models.ViewModels.StreamerListViewModel
+@{
+    ViewData["Title"] = "Streamers";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-people-fill"></i> Streamers</h2>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Streamer</a>
+</div>
+
+<ul class="nav nav-tabs mb-3" id="streamerTabs">
+    <li class="nav-item">
+        <a class="nav-link active" data-bs-toggle="tab" href="#live-tab">
+            <i class="bi bi-broadcast"></i> Live Monitoring (@Model.LiveStreamers.Count)
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-bs-toggle="tab" href="#vod-tab">
+            <i class="bi bi-collection-play"></i> VOD Monitoring (@Model.VodStreamers.Count)
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="live-tab">
+        @if (!Model.LiveStreamers.Any())
+        {
+            <div class="text-muted py-3">No streamers with live monitoring enabled.</div>
+        }
+        else
+        {
+            <table class="table table-hover">
+                <thead><tr>
+                    <th>Streamer</th><th>Quality</th><th>Actions</th>
+                </tr></thead>
+                <tbody>
+                @foreach (var s in Model.LiveStreamers)
+                {
+                    <tr>
+                        <td><strong>@s.DisplayName</strong> <small class="text-muted">@s.TwitchLogin</small></td>
+                        <td><span class="badge bg-secondary">@s.PreferredQuality</span></td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@s.Id" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form asp-action="Delete" asp-route-id="@s.Id" method="post" class="d-inline"
+                                  onsubmit="return confirm('Remove @s.DisplayName?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <div class="tab-pane fade" id="vod-tab">
+        @if (!Model.VodStreamers.Any())
+        {
+            <div class="text-muted py-3">No streamers with VOD monitoring enabled.</div>
+        }
+        else
+        {
+            <table class="table table-hover">
+                <thead><tr>
+                    <th>Streamer</th><th>Quality</th><th>Auto-Download</th><th>Actions</th>
+                </tr></thead>
+                <tbody>
+                @foreach (var s in Model.VodStreamers)
+                {
+                    <tr>
+                        <td><strong>@s.DisplayName</strong> <small class="text-muted">@s.TwitchLogin</small></td>
+                        <td><span class="badge bg-secondary">@s.PreferredQuality</span></td>
+                        <td>
+                            @if (s.AutoDownloadVods)
+                            { <span class="badge bg-success">Auto</span> }
+                            else
+                            { <span class="badge bg-outline-secondary">Manual</span> }
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="openVodBrowser('@s.TwitchLogin', '@s.PreferredQuality')">
+                                <i class="bi bi-collection-play"></i> Browse VODs
+                            </button>
+                            <a asp-action="Edit" asp-route-id="@s.Id" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form asp-action="Delete" asp-route-id="@s.Id" method="post" class="d-inline"
+                                  onsubmit="return confirm('Remove @s.DisplayName?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+<!-- VOD Browser Modal -->
+<div class="modal fade" id="vodModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-collection-play"></i> VOD Browser — <span id="vodModalLogin"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="vodList" class="row g-3">
+                    <div class="col-12 text-center"><div class="spinner-border"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let currentLogin = '';
+let currentQuality = 'best';
+const vodModal = new bootstrap.Modal(document.getElementById('vodModal'));
+
+function openVodBrowser(login, quality) {
+    currentLogin = login;
+    currentQuality = quality;
+    document.getElementById('vodModalLogin').textContent = login;
+    document.getElementById('vodList').innerHTML = '<div class="col-12 text-center"><div class="spinner-border"></div></div>';
+    vodModal.show();
+    fetch(`/Streamers/GetVods?login=${encodeURIComponent(login)}`)
+        .then(r => r.json())
+        .then(vods => renderVods(vods))
+        .catch(e => { document.getElementById('vodList').innerHTML = '<div class="col-12 text-danger">Failed to load VODs.</div>'; });
+}
+
+function renderVods(vods) {
+    if (!vods.length) {
+        document.getElementById('vodList').innerHTML = '<div class="col-12 text-muted">No VODs found.</div>';
+        return;
+    }
+    document.getElementById('vodList').innerHTML = vods.map(v => `
+        <div class="col-md-4 col-lg-3">
+            <div class="card h-100">
+                <img src="${v.thumbnailUrl.replace('%{width}','320').replace('%{height}','180')}" class="card-img-top" onerror="this.style.display='none'">
+                <div class="card-body p-2">
+                    <p class="card-text small fw-bold mb-1">${escapeHtml(v.title)}</p>
+                    <p class="card-text text-muted" style="font-size:0.75rem">${v.duration} &middot; ${new Date(v.createdAt).toLocaleDateString()}</p>
+                    <form method="post" action="/Streamers/DownloadVod">
+                        <input type="hidden" name="__RequestVerificationToken" value="${getAntiForgeryToken()}">
+                        <input type="hidden" name="login" value="${escapeHtml(currentLogin)}">
+                        <input type="hidden" name="vodId" value="${v.id}">
+                        <input type="hidden" name="title" value="${escapeHtml(v.title)}">
+                        <input type="hidden" name="quality" value="${escapeHtml(currentQuality)}">
+                        <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-download"></i> Download</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getAntiForgeryToken() {
+    return document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+}
+</script>
+}

@@ -1,0 +1,24 @@
+/* Twitch Downloader - custom styles */
+
+.text-purple { color: #9147ff; }
+.navbar-brand .text-purple { font-size: 1.2rem; }
+
+.job-card {
+    border-left: 3px solid #dee2e6;
+    transition: border-color 0.2s ease;
+}
+
+.job-card[data-status="downloading"] { border-left-color: #0d6efd; }
+.job-card[data-status="muxing"] { border-left-color: #0dcaf0; }
+.job-card[data-status="completed"] { border-left-color: #198754; }
+.job-card[data-status="failed"] { border-left-color: #dc3545; }
+.job-card[data-status="cancelled"] { border-left-color: #ffc107; }
+.job-card[data-status="queued"] { border-left-color: #6c757d; }
+
+.progress { border-radius: 0; }
+
+/* VOD modal thumbnails */
+#vodList .card-img-top {
+    aspect-ratio: 16/9;
+    object-fit: cover;
+}
