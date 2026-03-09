@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using TwitchDownloader.Models.Entities;
+using TwitchKickDownloader.Models.Entities;
 
-namespace TwitchDownloader.Models.ViewModels;
+namespace TwitchKickDownloader.Models.ViewModels;
 
 public class StreamerFormViewModel
 {

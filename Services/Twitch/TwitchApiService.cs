@@ -1,8 +1,8 @@
 using System.Text;
 using System.Text.Json;
-using TwitchDownloader.Models.Dtos;
+using TwitchKickDownloader.Models.Dtos;
 
-namespace TwitchDownloader.Services.Twitch;
+namespace TwitchKickDownloader.Services.Twitch;
 
 public class TwitchApiService(
     HttpClient http,

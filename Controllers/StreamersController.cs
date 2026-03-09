@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using TwitchDownloader.Data;
-using TwitchDownloader.Models.Entities;
-using TwitchDownloader.Models.ViewModels;
-using TwitchDownloader.Services;
-using TwitchDownloader.Services.Download;
-using TwitchDownloader.Services.Kick;
-using TwitchDownloader.Services.Twitch;
+using TwitchKickDownloader.Data;
+using TwitchKickDownloader.Models.Entities;
+using TwitchKickDownloader.Models.ViewModels;
+using TwitchKickDownloader.Services;
+using TwitchKickDownloader.Services.Download;
+using TwitchKickDownloader.Services.Kick;
+using TwitchKickDownloader.Services.Twitch;
 
-namespace TwitchDownloader.Controllers;
+namespace TwitchKickDownloader.Controllers;
 
 public class StreamersController(
     AppDbContext db,

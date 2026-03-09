@@ -1,7 +1,7 @@
 using System.Text.Json;
-using TwitchDownloader.Models.Dtos;
+using TwitchKickDownloader.Models.Dtos;
 
-namespace TwitchDownloader.Services.Kick;
+namespace TwitchKickDownloader.Services.Kick;
 
 public class KickApiService(HttpClient http, ILogger<KickApiService> logger)
 {

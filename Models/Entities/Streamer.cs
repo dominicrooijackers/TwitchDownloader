@@ -1,4 +1,4 @@
-namespace TwitchDownloader.Models.Entities;
+namespace TwitchKickDownloader.Models.Entities;
 
 public class Streamer
 {

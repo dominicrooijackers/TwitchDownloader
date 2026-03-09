@@ -1,19 +1,19 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
-using TwitchDownloader.Data;
-using TwitchDownloader.Models.Entities;
-using TwitchDownloader.Services.Kick;
-using TwitchDownloader.Services.Logging;
+using TwitchKickDownloader.Data;
+using TwitchKickDownloader.Models.Entities;
+using TwitchKickDownloader.Services.Kick;
+using TwitchKickDownloader.Services.Logging;
 using Xabe.FFmpeg;
 
-namespace TwitchDownloader.Services.Download;
+namespace TwitchKickDownloader.Services.Download;
 
 public class KickVodDownloadTask(
     AppDbContext db,
     KickApiService api,
     StorageService storage,
     DownloadOrchestrator orchestrator,
-    IOptions<TwitchDownloaderOptions> opts,
+    IOptions<TwitchKickDownloaderOptions> opts,
     ILogger<KickVodDownloadTask> logger) : IDownloadTask
 {
     public async Task RunAsync(int jobId, CancellationToken ct)

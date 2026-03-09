@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace TwitchDownloader.Models.Dtos;
+namespace TwitchKickDownloader.Models.Dtos;
 
 public class KickChannelInfo
 {

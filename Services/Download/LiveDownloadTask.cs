@@ -4,20 +4,20 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
-using TwitchDownloader.Data;
-using TwitchDownloader.Models.Entities;
-using TwitchDownloader.Services.Logging;
-using TwitchDownloader.Services.Twitch;
+using TwitchKickDownloader.Data;
+using TwitchKickDownloader.Models.Entities;
+using TwitchKickDownloader.Services.Logging;
+using TwitchKickDownloader.Services.Twitch;
 using Xabe.FFmpeg;
 
-namespace TwitchDownloader.Services.Download;
+namespace TwitchKickDownloader.Services.Download;
 
 public class LiveDownloadTask(
     AppDbContext db,
     TwitchApiService api,
     StorageService storage,
     DownloadOrchestrator orchestrator,
-    IOptions<TwitchDownloaderOptions> opts,
+    IOptions<TwitchKickDownloaderOptions> opts,
     ILogger<LiveDownloadTask> logger) : IDownloadTask
 {
     private record ChatRecord(string Timestamp, string Username, string DisplayName, string Color, string Message);

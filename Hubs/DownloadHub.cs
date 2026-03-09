@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
-using TwitchDownloader.Services.Download;
+using TwitchKickDownloader.Services.Download;
 
-namespace TwitchDownloader.Hubs;
+namespace TwitchKickDownloader.Hubs;
 
 public class DownloadHub(DownloadOrchestrator orchestrator) : Hub
 {

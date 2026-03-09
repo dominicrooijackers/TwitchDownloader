@@ -1,13 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using IOFile = System.IO.File;
-using TwitchDownloader.Models.ViewModels;
-using TwitchDownloader.Services;
+using TwitchKickDownloader.Models.ViewModels;
+using TwitchKickDownloader.Services;
 
-namespace TwitchDownloader.Controllers;
+namespace TwitchKickDownloader.Controllers;
 
 public class LibraryController(
-    IOptions<TwitchDownloaderOptions> opts,
+    IOptions<TwitchKickDownloaderOptions> opts,
     ILogger<LibraryController> logger) : Controller
 {
     public IActionResult Index()

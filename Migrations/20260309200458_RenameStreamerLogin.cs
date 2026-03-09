@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace TwitchDownloader.Migrations
+namespace TwitchKickDownloader.Migrations
 {
     /// <inheritdoc />
     public partial class RenameStreamerLogin : Migration

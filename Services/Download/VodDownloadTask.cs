@@ -1,21 +1,21 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
-using TwitchDownloader.Data;
-using TwitchDownloader.Models.Entities;
-using TwitchDownloader.Services.Logging;
-using TwitchDownloader.Services.Twitch;
+using TwitchKickDownloader.Data;
+using TwitchKickDownloader.Models.Entities;
+using TwitchKickDownloader.Services.Logging;
+using TwitchKickDownloader.Services.Twitch;
 using Xabe.FFmpeg;
 using Microsoft.Extensions.Options;
 
-namespace TwitchDownloader.Services.Download;
+namespace TwitchKickDownloader.Services.Download;
 
 public class VodDownloadTask(
     AppDbContext db,
     TwitchApiService api,
     StorageService storage,
     DownloadOrchestrator orchestrator,
-    IOptions<TwitchDownloaderOptions> opts,
+    IOptions<TwitchKickDownloaderOptions> opts,
     ILogger<VodDownloadTask> logger) : IDownloadTask
 {
     public async Task RunAsync(int jobId, CancellationToken ct)

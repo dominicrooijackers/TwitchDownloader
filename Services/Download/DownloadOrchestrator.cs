@@ -2,16 +2,16 @@ using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using TwitchDownloader.Data;
-using TwitchDownloader.Hubs;
-using TwitchDownloader.Models.Entities;
+using TwitchKickDownloader.Data;
+using TwitchKickDownloader.Hubs;
+using TwitchKickDownloader.Models.Entities;
 
-namespace TwitchDownloader.Services.Download;
+namespace TwitchKickDownloader.Services.Download;
 
 public class DownloadOrchestrator(
     IServiceScopeFactory scopeFactory,
     IHubContext<DownloadHub> hub,
-    IOptions<TwitchDownloaderOptions> opts,
+    IOptions<TwitchKickDownloaderOptions> opts,
     ILogger<DownloadOrchestrator> logger) : IDisposable
 {
     private readonly SemaphoreSlim _slots = new(opts.Value.MaxConcurrentDownloads, opts.Value.MaxConcurrentDownloads);

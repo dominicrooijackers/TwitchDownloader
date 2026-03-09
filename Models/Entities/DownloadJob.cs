@@ -1,4 +1,4 @@
-namespace TwitchDownloader.Models.Entities;
+namespace TwitchKickDownloader.Models.Entities;
 
 public enum JobType { LiveStream, VodOnDemand, VodAuto }
 public enum JobStatus { Queued, Downloading, Muxing, Completed, Failed, Cancelled }

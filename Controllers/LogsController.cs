@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using TwitchDownloader.Services.Logging;
+using TwitchKickDownloader.Services.Logging;
 
-namespace TwitchDownloader.Controllers;
+namespace TwitchKickDownloader.Controllers;
 
 public class LogsController(InMemoryLogStore store) : Controller
 {

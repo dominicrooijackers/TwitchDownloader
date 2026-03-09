@@ -1,4 +1,4 @@
-@model TwitchDownloader.Models.ViewModels.StreamerListViewModel
+@model TwitchKickDownloader.Models.ViewModels.StreamerListViewModel
 @{
     ViewData["Title"] = "Streamers";
 }
@@ -38,7 +38,7 @@
                 {
                     <tr>
                         <td><strong>@s.DisplayName</strong> <small class="text-muted">@s.StreamerName</small></td>
-                        <td>@if (s.Platform == TwitchDownloader.Models.Entities.Platform.Kick)
+                        <td>@if (s.Platform == TwitchKickDownloader.Models.Entities.Platform.Kick)
                             { <span class="badge text-bg-success">Kick</span> }
                             else
                             { <span class="badge text-bg-primary">Twitch</span> }</td>
@@ -76,7 +76,7 @@
                 {
                     <tr>
                         <td><strong>@s.DisplayName</strong> <small class="text-muted">@s.StreamerName</small></td>
-                        <td>@if (s.Platform == TwitchDownloader.Models.Entities.Platform.Kick)
+                        <td>@if (s.Platform == TwitchKickDownloader.Models.Entities.Platform.Kick)
                             { <span class="badge text-bg-success">Kick</span> }
                             else
                             { <span class="badge text-bg-primary">Twitch</span> }</td>

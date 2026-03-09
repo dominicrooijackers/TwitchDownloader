@@ -1,4 +1,4 @@
-namespace TwitchDownloader.Models.Dtos;
+namespace TwitchKickDownloader.Models.Dtos;
 
 public class TwitchStreamInfo
 {

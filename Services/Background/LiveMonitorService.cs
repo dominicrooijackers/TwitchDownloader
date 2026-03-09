@@ -1,17 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using TwitchDownloader.Data;
-using TwitchDownloader.Models.Entities;
-using TwitchDownloader.Services.Download;
-using TwitchDownloader.Services.Kick;
-using TwitchDownloader.Services.Twitch;
+using TwitchKickDownloader.Data;
+using TwitchKickDownloader.Models.Entities;
+using TwitchKickDownloader.Services.Download;
+using TwitchKickDownloader.Services.Kick;
+using TwitchKickDownloader.Services.Twitch;
 
-namespace TwitchDownloader.Services.Background;
+namespace TwitchKickDownloader.Services.Background;
 
 public class LiveMonitorService(
     IServiceScopeFactory scopeFactory,
     DownloadOrchestrator orchestrator,
-    IOptions<TwitchDownloaderOptions> opts,
+    IOptions<TwitchKickDownloaderOptions> opts,
     ILogger<LiveMonitorService> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

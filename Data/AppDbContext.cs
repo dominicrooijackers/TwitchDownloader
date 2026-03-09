@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using TwitchDownloader.Models.Entities;
+using TwitchKickDownloader.Models.Entities;
 
-namespace TwitchDownloader.Data;
+namespace TwitchKickDownloader.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {

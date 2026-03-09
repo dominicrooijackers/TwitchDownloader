@@ -1,4 +1,4 @@
-namespace TwitchDownloader.Services.Download;
+namespace TwitchKickDownloader.Services.Download;
 
 public interface IDownloadTask
 {
