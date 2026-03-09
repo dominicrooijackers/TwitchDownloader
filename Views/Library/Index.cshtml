@@ -1,0 +1,190 @@
+@model TwitchDownloader.Models.ViewModels.LibraryViewModel
+@{
+    ViewData["Title"] = "Library";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-collection-play-fill"></i> Library</h2>
+    @if (Model.TotalFiles > 0)
+    {
+        <small class="text-muted">@Model.TotalFiles file@(Model.TotalFiles == 1 ? "" : "s") &middot; @FormatBytes(Model.TotalSizeBytes)</small>
+    }
+</div>
+
+@if (!Model.ByStreamer.Any())
+{
+    <div class="text-center text-muted py-5">
+        <i class="bi bi-collection-play fs-1"></i>
+        <p class="mt-2">No recordings yet.</p>
+        <small>Completed downloads will appear here. Storage path: <code>@Model.StoragePath</code></small>
+    </div>
+}
+
+@foreach (var group in Model.ByStreamer)
+{
+    <h5 class="mt-3 mb-2"><i class="bi bi-person-fill"></i> @group.Key</h5>
+    <div class="row g-3 mb-4">
+    @foreach (var item in group)
+    {
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card h-100 library-card" role="button"
+                 onclick="openPlayer('@item.Id', '@item.ChatId', '@Html.Raw(item.Title.Replace("'", "\\'"))', '@item.HasChat.ToString().ToLower()')">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-start gap-2 mb-2">
+                        <span class="badge @(item.Type == "Live" ? "bg-danger" : "bg-primary") flex-shrink-0">
+                            <i class="bi @(item.Type == "Live" ? "bi-broadcast" : "bi-collection-play")"></i>
+                            @item.Type
+                        </span>
+                        @if (item.HasChat)
+                        {
+                            <span class="badge bg-secondary flex-shrink-0"><i class="bi bi-chat-dots"></i> Chat</span>
+                        }
+                    </div>
+                    <p class="card-text small fw-semibold mb-1 text-truncate" title="@item.Title">@item.Title</p>
+                    <p class="card-text" style="font-size:0.75rem">
+                        <span class="text-muted">@item.RecordedAt.ToLocalTime().ToString("MMM d, yyyy HH:mm")</span>
+                        <span class="text-muted ms-2">@FormatBytes(item.SizeBytes)</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+    </div>
+}
+
+<!-- Video Player Modal -->
+<div class="modal fade" id="playerModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary py-2">
+                <h6 class="modal-title mb-0" id="playerTitle"></h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopPlayer()"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="player-layout" class="d-flex" style="height:75vh">
+                    <!-- Video -->
+                    <div id="video-col" class="flex-grow-1 bg-black d-flex align-items-center">
+                        <video id="player" controls class="w-100 h-100" style="max-height:75vh">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                    <!-- Chat panel -->
+                    <div id="chat-col" class="d-none flex-shrink-0 border-start border-secondary d-flex flex-column" style="width:280px">
+                        <div class="px-2 py-1 border-bottom border-secondary small text-muted">
+                            <i class="bi bi-chat-dots"></i> Chat replay
+                        </div>
+                        <div id="chat-messages" class="overflow-auto flex-grow-1 p-2" style="font-size:0.8rem"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        if (bytes < 1024 * 1024 * 1024) return $"{bytes / 1024.0 / 1024.0:F1} MB";
+        return $"{bytes / 1024.0 / 1024.0 / 1024.0:F2} GB";
+    }
+}
+
+@section Scripts {
+<script>
+const playerModal = new bootstrap.Modal(document.getElementById('playerModal'));
+const video = document.getElementById('player');
+let chatData = [];
+let chatInterval = null;
+
+function openPlayer(videoId, chatId, title, hasChat) {
+    document.getElementById('playerTitle').textContent = title;
+    video.src = `/Library/Stream?id=${encodeURIComponent(videoId)}`;
+    video.load();
+
+    const chatCol = document.getElementById('chat-col');
+    const videoCol = document.getElementById('video-col');
+
+    if (hasChat === 'true' && chatId) {
+        chatCol.classList.remove('d-none');
+        chatCol.classList.add('d-flex', 'flex-column');
+        videoCol.style.maxWidth = 'calc(100% - 280px)';
+        loadChat(chatId);
+    } else {
+        chatCol.classList.add('d-none');
+        chatCol.classList.remove('d-flex', 'flex-column');
+        videoCol.style.maxWidth = '';
+    }
+
+    playerModal.show();
+
+    // Sync chat to video time
+    if (chatInterval) clearInterval(chatInterval);
+    chatInterval = setInterval(syncChat, 500);
+}
+
+function stopPlayer() {
+    video.pause();
+    video.src = '';
+    if (chatInterval) { clearInterval(chatInterval); chatInterval = null; }
+    chatData = [];
+    document.getElementById('chat-messages').innerHTML = '';
+}
+
+async function loadChat(chatId) {
+    try {
+        const resp = await fetch(`/Library/Chat?id=${encodeURIComponent(chatId)}`);
+        if (!resp.ok) return;
+        const raw = await resp.json();
+        // Handle both live chat format {Timestamp, DisplayName, Message} and VOD format {offset, commenter, message}
+        chatData = raw.map(m => ({
+            offset: m.offset ?? parseTimestamp(m.Timestamp),
+            name: m.DisplayName ?? m.commenter ?? m.username ?? '?',
+            color: m.Color ?? m.color ?? '#ccc',
+            text: m.Message ?? m.message ?? ''
+        })).filter(m => m.text).sort((a, b) => a.offset - b.offset);
+    } catch (e) {
+        console.warn('Failed to load chat', e);
+    }
+}
+
+function parseTimestamp(ts) {
+    // TMI timestamp is unix ms
+    if (!ts) return 0;
+    const n = Number(ts);
+    return isNaN(n) ? 0 : n / 1000;
+}
+
+let lastShownIdx = -1;
+function syncChat() {
+    if (!chatData.length) return;
+    const t = video.currentTime;
+    const container = document.getElementById('chat-messages');
+
+    // If user scrubbed back, reset
+    const firstVisible = lastShownIdx >= 0 ? chatData[Math.max(0, lastShownIdx)].offset : Infinity;
+    if (t < firstVisible - 5) {
+        container.innerHTML = '';
+        lastShownIdx = -1;
+    }
+
+    let appended = false;
+    while (lastShownIdx + 1 < chatData.length && chatData[lastShownIdx + 1].offset <= t) {
+        lastShownIdx++;
+        const m = chatData[lastShownIdx];
+        const el = document.createElement('div');
+        el.className = 'mb-1';
+        el.innerHTML = `<span style="color:${escapeHtml(m.color || '#ccc')};font-weight:600">${escapeHtml(m.name)}</span>: ${escapeHtml(m.text)}`;
+        container.appendChild(el);
+        appended = true;
+    }
+    if (appended) container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+}
