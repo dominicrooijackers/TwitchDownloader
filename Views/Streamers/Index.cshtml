@@ -37,7 +37,7 @@
                 @foreach (var s in Model.LiveStreamers)
                 {
                     <tr>
-                        <td><strong>@s.DisplayName</strong> <small class="text-muted">@s.TwitchLogin</small></td>
+                        <td><strong>@s.DisplayName</strong> <small class="text-muted">@s.StreamerName</small></td>
                         <td>@if (s.Platform == TwitchDownloader.Models.Entities.Platform.Kick)
                             { <span class="badge text-bg-success">Kick</span> }
                             else
@@ -75,7 +75,7 @@
                 @foreach (var s in Model.VodStreamers)
                 {
                     <tr>
-                        <td><strong>@s.DisplayName</strong> <small class="text-muted">@s.TwitchLogin</small></td>
+                        <td><strong>@s.DisplayName</strong> <small class="text-muted">@s.StreamerName</small></td>
                         <td>@if (s.Platform == TwitchDownloader.Models.Entities.Platform.Kick)
                             { <span class="badge text-bg-success">Kick</span> }
                             else
@@ -88,7 +88,7 @@
                             { <span class="badge text-bg-secondary">Manual</span> }
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="openVodBrowser('@s.TwitchLogin', '@s.PreferredQuality', '@s.Platform')">
+                            <button class="btn btn-sm btn-outline-primary" onclick="openVodBrowser('@s.StreamerName', '@s.PreferredQuality', '@s.Platform')">
                                 <i class="bi bi-collection-play"></i> Browse VODs
                             </button>
                             <a asp-action="Edit" asp-route-id="@s.Id" class="btn btn-sm btn-outline-secondary">

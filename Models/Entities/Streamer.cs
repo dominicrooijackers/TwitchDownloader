@@ -3,7 +3,7 @@ namespace TwitchDownloader.Models.Entities;
 public class Streamer
 {
     public int Id { get; set; }
-    public string TwitchLogin { get; set; } = "";
+    public string StreamerName { get; set; } = "";
     public string DisplayName { get; set; } = "";
     public Platform Platform { get; set; } = Platform.Twitch;
     public bool MonitorLive { get; set; }

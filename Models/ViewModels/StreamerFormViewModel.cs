@@ -9,7 +9,7 @@ public class StreamerFormViewModel
 
     [Required]
     [Display(Name = "Login / Channel Slug")]
-    public string TwitchLogin { get; set; } = "";
+    public string StreamerName { get; set; } = "";
 
     [Display(Name = "Platform")]
     public Platform Platform { get; set; } = Platform.Twitch;

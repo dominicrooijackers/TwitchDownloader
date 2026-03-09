@@ -19,7 +19,7 @@ public class StreamersController(
 {
     public async Task<IActionResult> Index()
     {
-        var streamers = await db.Streamers.OrderBy(s => s.TwitchLogin).ToListAsync();
+        var streamers = await db.Streamers.OrderBy(s => s.StreamerName).ToListAsync();
         return View(new StreamerListViewModel
         {
             LiveStreamers = streamers.Where(s => s.MonitorLive).ToList(),
@@ -34,29 +34,29 @@ public class StreamersController(
     {
         if (!ModelState.IsValid) return View(model);
 
-        model.TwitchLogin = model.TwitchLogin.Trim().ToLowerInvariant();
+        model.StreamerName = model.StreamerName.Trim().ToLowerInvariant();
 
-        if (await db.Streamers.AnyAsync(s => s.TwitchLogin == model.TwitchLogin && s.Platform == model.Platform))
+        if (await db.Streamers.AnyAsync(s => s.StreamerName == model.StreamerName && s.Platform == model.Platform))
         {
-            ModelState.AddModelError("TwitchLogin", "This streamer already exists on this platform.");
+            ModelState.AddModelError("StreamerName", "This streamer already exists on this platform.");
             return View(model);
         }
 
         string displayName;
         if (model.Platform == Platform.Kick)
         {
-            var channel = await kickApi.GetChannelInfoAsync(model.TwitchLogin);
-            displayName = channel?.User?.Username ?? model.TwitchLogin;
+            var channel = await kickApi.GetChannelInfoAsync(model.StreamerName);
+            displayName = channel?.User?.Username ?? model.StreamerName;
         }
         else
         {
-            var user = await twitchApi.GetUserAsync(model.TwitchLogin);
-            displayName = user?.DisplayName ?? model.TwitchLogin;
+            var user = await twitchApi.GetUserAsync(model.StreamerName);
+            displayName = user?.DisplayName ?? model.StreamerName;
         }
 
         db.Streamers.Add(new Streamer
         {
-            TwitchLogin = model.TwitchLogin,
+            StreamerName = model.StreamerName,
             DisplayName = displayName,
             Platform = model.Platform,
             MonitorLive = model.MonitorLive,
@@ -78,7 +78,7 @@ public class StreamersController(
         return View(new StreamerFormViewModel
         {
             Id = streamer.Id,
-            TwitchLogin = streamer.TwitchLogin,
+            StreamerName = streamer.StreamerName,
             Platform = streamer.Platform,
             MonitorLive = streamer.MonitorLive,
             MonitorVods = streamer.MonitorVods,
@@ -144,7 +144,7 @@ public class StreamersController(
     [HttpGet]
     public async Task<IActionResult> VodExists(string login, string vodId, string title)
     {
-        var streamer = await db.Streamers.FirstOrDefaultAsync(s => s.TwitchLogin == login);
+        var streamer = await db.Streamers.FirstOrDefaultAsync(s => s.StreamerName == login);
         var path = storage.GetVodOutputPath(login, vodId, title, streamer?.CustomOutputPath);
         return Json(new { exists = System.IO.File.Exists(path) });
     }
@@ -152,7 +152,7 @@ public class StreamersController(
     public async Task<IActionResult> DownloadVod([FromForm] string login, [FromForm] string vodId, [FromForm] string title, [FromForm] string quality, [FromForm] string platform = "Twitch")
     {
         var p = Enum.TryParse<Platform>(platform, out var parsed) ? parsed : Platform.Twitch;
-        var streamer = await db.Streamers.FirstOrDefaultAsync(s => s.TwitchLogin == login && s.Platform == p);
+        var streamer = await db.Streamers.FirstOrDefaultAsync(s => s.StreamerName == login && s.Platform == p);
         var effectiveQuality = string.IsNullOrEmpty(quality) ? (streamer?.PreferredQuality ?? "best") : quality;
 
         await orchestrator.EnqueueAsync(login, p, JobType.VodOnDemand, vodId, title, effectiveQuality);

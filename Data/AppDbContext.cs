@@ -19,7 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         modelBuilder.Entity<Streamer>(e =>
         {
-            e.HasIndex(s => new { s.TwitchLogin, s.Platform }).IsUnique();
+            e.HasIndex(s => new { s.StreamerName, s.Platform }).IsUnique();
             e.Property(s => s.Platform).HasConversion<string>();
         });
 

@@ -57,14 +57,14 @@ public class VodMonitorService(
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                logger.LogWarning(ex, "Failed to poll VODs for {Login}", streamer.TwitchLogin);
+                logger.LogWarning(ex, "Failed to poll VODs for {Login}", streamer.StreamerName);
             }
         }
     }
 
     private async Task PollTwitchVodsAsync(Models.Entities.Streamer streamer, AppDbContext db, TwitchApiService api, CancellationToken ct)
     {
-        var videos = await api.GetUserVideosForStreamerAsync(streamer.TwitchLogin, ct);
+        var videos = await api.GetUserVideosForStreamerAsync(streamer.StreamerName, ct);
 
         foreach (var video in videos)
         {
@@ -73,17 +73,17 @@ public class VodMonitorService(
             var alreadyKnown = await db.KnownVods.AnyAsync(v => v.VodId == video.Id, ct);
             if (alreadyKnown) continue;
 
-            db.KnownVods.Add(new KnownVod { StreamerLogin = streamer.TwitchLogin, VodId = video.Id, CreatedAt = DateTime.UtcNow });
+            db.KnownVods.Add(new KnownVod { StreamerLogin = streamer.StreamerName, VodId = video.Id, CreatedAt = DateTime.UtcNow });
             await db.SaveChangesAsync(ct);
 
-            logger.LogInformation("New Twitch VOD {VodId} for {Login}, queuing auto-download", video.Id, streamer.TwitchLogin);
-            await orchestrator.EnqueueAsync(streamer.TwitchLogin, Platform.Twitch, JobType.VodAuto, video.Id, video.Title, streamer.PreferredQuality, ct);
+            logger.LogInformation("New Twitch VOD {VodId} for {Login}, queuing auto-download", video.Id, streamer.StreamerName);
+            await orchestrator.EnqueueAsync(streamer.StreamerName, Platform.Twitch, JobType.VodAuto, video.Id, video.Title, streamer.PreferredQuality, ct);
         }
     }
 
     private async Task PollKickVodsAsync(Models.Entities.Streamer streamer, AppDbContext db, KickApiService api, CancellationToken ct)
     {
-        var videos = await api.GetVideosAsync(streamer.TwitchLogin, ct);
+        var videos = await api.GetVideosAsync(streamer.StreamerName, ct);
 
         foreach (var video in videos)
         {
@@ -92,11 +92,11 @@ public class VodMonitorService(
             var alreadyKnown = await db.KnownVods.AnyAsync(v => v.VodId == video.Id, ct);
             if (alreadyKnown) continue;
 
-            db.KnownVods.Add(new KnownVod { StreamerLogin = streamer.TwitchLogin, VodId = video.Id, CreatedAt = DateTime.UtcNow });
+            db.KnownVods.Add(new KnownVod { StreamerLogin = streamer.StreamerName, VodId = video.Id, CreatedAt = DateTime.UtcNow });
             await db.SaveChangesAsync(ct);
 
-            logger.LogInformation("New Kick VOD {VodId} for {Login}, queuing auto-download", video.Id, streamer.TwitchLogin);
-            await orchestrator.EnqueueAsync(streamer.TwitchLogin, Platform.Kick, JobType.VodAuto, video.Id, video.Title, streamer.PreferredQuality, ct);
+            logger.LogInformation("New Kick VOD {VodId} for {Login}, queuing auto-download", video.Id, streamer.StreamerName);
+            await orchestrator.EnqueueAsync(streamer.StreamerName, Platform.Kick, JobType.VodAuto, video.Id, video.Title, streamer.PreferredQuality, ct);
         }
     }
 }

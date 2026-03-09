@@ -57,32 +57,32 @@ public class LiveMonitorService(
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                logger.LogWarning(ex, "Failed to poll live status for {Login}", streamer.TwitchLogin);
+                logger.LogWarning(ex, "Failed to poll live status for {Login}", streamer.StreamerName);
             }
         }
     }
 
     private async Task PollTwitchLiveAsync(Models.Entities.Streamer streamer, AppDbContext db, TwitchApiService api, CancellationToken ct)
     {
-        var stream = await api.GetStreamAsync(streamer.TwitchLogin, ct);
+        var stream = await api.GetStreamAsync(streamer.StreamerName, ct);
         if (stream is null || stream.Type != "live") return;
 
         var alreadyTracked = await db.DownloadJobs
             .AnyAsync(j =>
-                j.StreamerLogin == streamer.TwitchLogin &&
+                j.StreamerLogin == streamer.StreamerName &&
                 j.TwitchItemId == stream.Id &&
                 (j.Status == JobStatus.Queued || j.Status == JobStatus.Downloading || j.Status == JobStatus.Muxing),
                 ct);
 
         if (alreadyTracked) return;
 
-        logger.LogInformation("{Login} is live on Twitch (stream {StreamId}), queuing download", streamer.TwitchLogin, stream.Id);
-        await orchestrator.EnqueueAsync(streamer.TwitchLogin, Platform.Twitch, JobType.LiveStream, stream.Id, stream.Title, streamer.PreferredQuality, ct);
+        logger.LogInformation("{Login} is live on Twitch (stream {StreamId}), queuing download", streamer.StreamerName, stream.Id);
+        await orchestrator.EnqueueAsync(streamer.StreamerName, Platform.Twitch, JobType.LiveStream, stream.Id, stream.Title, streamer.PreferredQuality, ct);
     }
 
     private async Task PollKickLiveAsync(Models.Entities.Streamer streamer, AppDbContext db, KickApiService api, CancellationToken ct)
     {
-        var channel = await api.GetChannelInfoAsync(streamer.TwitchLogin, ct);
+        var channel = await api.GetChannelInfoAsync(streamer.StreamerName, ct);
         if (channel?.Livestream is null) return;
 
         var streamId = channel.Livestream.Id;
@@ -90,14 +90,14 @@ public class LiveMonitorService(
 
         var alreadyTracked = await db.DownloadJobs
             .AnyAsync(j =>
-                j.StreamerLogin == streamer.TwitchLogin &&
+                j.StreamerLogin == streamer.StreamerName &&
                 j.TwitchItemId == streamId &&
                 (j.Status == JobStatus.Queued || j.Status == JobStatus.Downloading || j.Status == JobStatus.Muxing),
                 ct);
 
         if (alreadyTracked) return;
 
-        logger.LogInformation("{Login} is live on Kick (stream {StreamId}), queuing download", streamer.TwitchLogin, streamId);
-        await orchestrator.EnqueueAsync(streamer.TwitchLogin, Platform.Kick, JobType.LiveStream, streamId, title, streamer.PreferredQuality, ct);
+        logger.LogInformation("{Login} is live on Kick (stream {StreamId}), queuing download", streamer.StreamerName, streamId);
+        await orchestrator.EnqueueAsync(streamer.StreamerName, Platform.Kick, JobType.LiveStream, streamId, title, streamer.PreferredQuality, ct);
     }
 }
