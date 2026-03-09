@@ -117,11 +117,31 @@
     </div>
 </div>
 
+<div class="modal fade" id="vodOverwriteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-warning"></i> File Already Exists</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>A recording for <strong id="overwriteVodTitle"></strong> already exists on disk.</p>
+                <p class="text-muted mb-0">Do you want to overwrite it or cancel?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="overwriteConfirmBtn"><i class="bi bi-trash"></i> Overwrite</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
 let currentLogin = '';
 let currentQuality = 'best';
 const vodModal = new bootstrap.Modal(document.getElementById('vodModal'));
+const vodOverwriteModal = new bootstrap.Modal(document.getElementById('vodOverwriteModal'));
 
 function openVodBrowser(login, quality) {
     currentLogin = login;
@@ -147,18 +167,51 @@ function renderVods(vods) {
                 <div class="card-body p-2">
                     <p class="card-text small fw-bold mb-1">${escapeHtml(v.title)}</p>
                     <p class="card-text text-muted" style="font-size:0.75rem">${v.duration} &middot; ${new Date(v.createdAt).toLocaleDateString()}</p>
-                    <form method="post" action="/Streamers/DownloadVod">
-                        <input type="hidden" name="__RequestVerificationToken" value="${getAntiForgeryToken()}">
-                        <input type="hidden" name="login" value="${escapeHtml(currentLogin)}">
-                        <input type="hidden" name="vodId" value="${v.id}">
-                        <input type="hidden" name="title" value="${escapeHtml(v.title)}">
-                        <input type="hidden" name="quality" value="${escapeHtml(currentQuality)}">
-                        <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-download"></i> Download</button>
-                    </form>
+                    <button class="btn btn-sm btn-primary w-100 vod-download-btn" data-vod-id="${v.id}" data-vod-title="${escapeHtml(v.title)}">
+                        <i class="bi bi-download"></i> Download
+                    </button>
                 </div>
             </div>
         </div>
     `).join('');
+}
+
+document.getElementById('vodList').addEventListener('click', function(e) {
+    const btn = e.target.closest('.vod-download-btn');
+    if (btn) checkAndDownload(btn.dataset.vodId, btn.dataset.vodTitle);
+});
+
+function checkAndDownload(vodId, title) {
+    fetch(`/Streamers/VodExists?login=${encodeURIComponent(currentLogin)}&vodId=${encodeURIComponent(vodId)}&title=${encodeURIComponent(title)}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.exists) {
+                document.getElementById('overwriteVodTitle').textContent = title;
+                document.getElementById('overwriteConfirmBtn').onclick = function () {
+                    vodOverwriteModal.hide();
+                    submitDownload(vodId, title);
+                };
+                vodOverwriteModal.show();
+            } else {
+                submitDownload(vodId, title);
+            }
+        });
+}
+
+function submitDownload(vodId, title) {
+    const form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/Streamers/DownloadVod';
+    const fields = { '__RequestVerificationToken': getAntiForgeryToken(), login: currentLogin, vodId, title, quality: currentQuality };
+    for (const [name, value] of Object.entries(fields)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+    }
+    document.body.appendChild(form);
+    form.submit();
 }
 
 function escapeHtml(s) {

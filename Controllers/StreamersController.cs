@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TwitchDownloader.Data;
 using TwitchDownloader.Models.Entities;
 using TwitchDownloader.Models.ViewModels;
+using TwitchDownloader.Services;
 using TwitchDownloader.Services.Download;
 using TwitchDownloader.Services.Twitch;
 
@@ -11,7 +12,8 @@ namespace TwitchDownloader.Controllers;
 public class StreamersController(
     AppDbContext db,
     TwitchApiService api,
-    DownloadOrchestrator orchestrator) : Controller
+    DownloadOrchestrator orchestrator,
+    StorageService storage) : Controller
 {
     public async Task<IActionResult> Index()
     {
@@ -112,7 +114,14 @@ public class StreamersController(
         }));
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
+    [HttpGet]
+    public async Task<IActionResult> VodExists(string login, string vodId, string title)
+    {
+        var streamer = await db.Streamers.FirstOrDefaultAsync(s => s.TwitchLogin == login);
+        var path = storage.GetVodOutputPath(login, vodId, title, streamer?.CustomOutputPath);
+        return Json(new { exists = System.IO.File.Exists(path) });
+    }
+
     public async Task<IActionResult> DownloadVod([FromForm] string login, [FromForm] string vodId, [FromForm] string title, [FromForm] string quality)
     {
         var streamer = await db.Streamers.FirstOrDefaultAsync(s => s.TwitchLogin == login);
