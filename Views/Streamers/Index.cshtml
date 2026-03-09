@@ -75,9 +75,9 @@
                         <td><span class="badge bg-secondary">@s.PreferredQuality</span></td>
                         <td>
                             @if (s.AutoDownloadVods)
-                            { <span class="badge bg-success">Auto</span> }
+                            { <span class="badge text-bg-success">Auto</span> }
                             else
-                            { <span class="badge bg-outline-secondary">Manual</span> }
+                            { <span class="badge text-bg-secondary">Manual</span> }
                         </td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary" onclick="openVodBrowser('@s.TwitchLogin', '@s.PreferredQuality')">
